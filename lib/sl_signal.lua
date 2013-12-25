@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_util"
 require "sl_event"
 
 sl_signal = {}
@@ -28,6 +29,9 @@ setmetatable(sl_signal, {__mode = "k"})
 local sl_binding_signals = {}
 
 function sl_signal:new(name, data)
+  if name then
+    sl_checkarg(name, "string")
+  end
   if not data then
     data = 0
   end
@@ -66,6 +70,9 @@ function sl_signal:read()
 end
 
 function signal(name, data)
+  if name then
+    sl_checkarg(name, "string")
+  end
   local s = sl_signal[name]
   if not s then
     s = sl_signal:new(name, data)
@@ -76,6 +83,8 @@ end
 local sl_binding_paths = {}
 
 function bind_signal(name, path)
+  sl_checkarg(name, "string")
+  sl_checkarg(path, "string")
   sl_binding_signals[name] = path
   if not sl_binding_paths[path] then
     sl_binding_paths[path] = true
@@ -84,6 +93,7 @@ function bind_signal(name, path)
 end
 
 function unbind_signal(name)
+  sl_checkarg(name, "string")
   sl_binding_signals[name] = nil
 end
 

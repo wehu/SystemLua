@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_util"
 require "sl_event"
 require "sl_simtime"
 require "sl_scheduler"
@@ -29,7 +30,11 @@ sl_simulator = {stopped=true}
 function sl_simulator:run(body, delay)
   self.stopped = false
   if body then
+     sl_checkarg(body, "function")
      body()
+  end
+  if delay then
+    sl_checkarg(delay, "number")
   end
   local deadline = (delay and sl_simtime.timeline + delay) or sl_simtime.timeline
   repeat

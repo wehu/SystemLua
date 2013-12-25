@@ -20,9 +20,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_util"
+
 sl_pipe = {}
 
 function sl_pipe:new(name)
+  if name then
+    sl_checkarg(name, "string")
+  end
   local o = {event_rd=event(),
        event_wr=event(),
        event_pk=event(),
@@ -62,6 +67,9 @@ function sl_pipe:size()
 end
 
 function pipe(name)
+  if name then
+    sl_checkarg(name, "string")
+  end
   local p = sl_pipe[name]
   if not p then
     p = sl_pipe:new(name)

@@ -20,9 +20,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_util"
+
 sl_event = {}
 
 function sl_event:new(name)
+  if name then
+    sl_checkarg(name, "string")
+  end
   local o = {callbacks={}, name=name}
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})
@@ -33,11 +38,13 @@ function sl_event:new(name)
 end
 
 function sl_event:register(callback)
+  sl_checkarg(callback, "function")
   self.callbacks[callback] = callback
   return callback
 end
 
 function sl_event:unregister(callback)
+  sl_checkarg(callback, "function")
   self.callbacks[callback] = nil
 end
 
@@ -48,6 +55,9 @@ function sl_event:notify(...)
 end
 
 function event(name)
+  if name then
+    sl_checkarg(name, "string")
+  end
   local e = sl_event[name]
   if not e then
     e = sl_event:new(name)

@@ -21,12 +21,14 @@ THE SOFTWARE.
 --]]
 
 require "sl_logger"
+require "sl_util"
 
 sl_scheduler = {running_q_size = 0, running_q={}, sleeping_q={}, stopped=true}
 setmetatable(sl_scheduler.running_q, {__mode = "k"})
 setmetatable(sl_scheduler.sleeping_q, {__mode = "k"})
 
 function sl_scheduler:thread(body)
+  sl_checkarg(body, "function")
   local th = coroutine.create(body)
   self.running_q[th] = th
   self.running_q_size = self.running_q_size + 1

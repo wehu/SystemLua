@@ -20,6 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_util"
+
 sl_simtime = {timeline=0, simtimes={}, size=0, stopped=true}
 setmetatable(sl_simtime.simtimes, {__mode = "k"})
 
@@ -48,6 +50,7 @@ function sl_simtime:st(t)
 end
 
 function sl_simtime:new(delay)
+  sl_checkarg(delay, "number")
   local o = {callbacks={}}
   self.size = self.size + 1
   setmetatable(o.callbacks, {__mode = "k"})
@@ -58,11 +61,13 @@ function sl_simtime:new(delay)
 end
 
 function sl_simtime:register(callback)
+  sl_checkarg(callback, "function")
   self.callbacks[callback] = callback
   return callback
 end
 
 function sl_simtime:unregister(callback)
+  sl_checkarg(callback, "function")
   self.callbacks[callback] = nil
 end
 
@@ -75,6 +80,12 @@ end
 function sl_simtime:run(delta, max)
   self.stopped = false
   local ct = sl_simtime.timeline
+  if delta then
+    sl_checkarg(delta, "number")
+  end
+  if max then
+    sl_checkarg(max, "number")
+  end
   if not max then
     max = delta
   end
@@ -108,8 +119,10 @@ function sl_simtime:stop()
 end
 
 function simtime(delay, callback)
+  sl_checkarg(delay, "number")
   local st = sl_simtime:new(delay)
   if callback then
+    sl_checkarg(callback, "function")
     st:register(callback)
   end
   return st
