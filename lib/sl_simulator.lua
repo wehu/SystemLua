@@ -30,11 +30,11 @@ sl_simulator = {stopped=true}
 function sl_simulator:run(body, delay)
   self.stopped = false
   if body then
-     sl_checkarg(body, "function")
+     sl_checktype(body, "function")
      body()
   end
   if delay then
-    sl_checkarg(delay, "number")
+    sl_checktype(delay, "number")
   end
   local deadline = (delay and sl_simtime.timeline + delay) or sl_simtime.timeline
   repeat

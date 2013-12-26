@@ -26,13 +26,14 @@ sl_pipe = {}
 
 function sl_pipe:new(name)
   if name then
-    sl_checkarg(name, "string")
+    sl_checktype(name, "string")
   end
   local o = {event_rd=event(),
        event_wr=event(),
        event_pk=event(),
        queue={},
-       name=name}
+       name=name,
+       typ="pipe"}
   setmetatable(o, {__index = self})
   if name then
     self[name] = o
@@ -68,7 +69,7 @@ end
 
 function pipe(name)
   if name then
-    sl_checkarg(name, "string")
+    sl_checktype(name, "string")
   end
   local p = sl_pipe[name]
   if not p then

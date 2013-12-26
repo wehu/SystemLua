@@ -30,7 +30,7 @@ local sl_binding_signals = {}
 
 function sl_signal:new(name, data)
   if name then
-    sl_checkarg(name, "string")
+    sl_checktype(name, "string")
   end
   if not data then
     data = 0
@@ -40,7 +40,8 @@ function sl_signal:new(name, data)
        anyedge=event(),
        new_data=data,
        old_data=data,
-       name=name}
+       name=name,
+       typ="signal"}
   setmetatable(o, {__index = self})
   if name then
     self[name] = o
@@ -50,6 +51,9 @@ end
 
 function sl_signal:write(data, nosync)
   self.new_data = data
+  if nosync then
+    sl_checktype(nosync, "boolean")
+  end
   if data ~= self.old_data then
     self.anyedge:notify(data)
   end
@@ -71,7 +75,7 @@ end
 
 function signal(name, data)
   if name then
-    sl_checkarg(name, "string")
+    sl_checktype(name, "string")
   end
   local s = sl_signal[name]
   if not s then
@@ -83,8 +87,8 @@ end
 local sl_binding_paths = {}
 
 function bind_signal(name, path)
-  sl_checkarg(name, "string")
-  sl_checkarg(path, "string")
+  sl_checktype(name, "string")
+  sl_checktype(path, "string")
   sl_binding_signals[name] = path
   if not sl_binding_paths[path] then
     sl_binding_paths[path] = true
@@ -93,7 +97,7 @@ function bind_signal(name, path)
 end
 
 function unbind_signal(name)
-  sl_checkarg(name, "string")
+  sl_checktype(name, "string")
   sl_binding_signals[name] = nil
 end
 

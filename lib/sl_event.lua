@@ -26,9 +26,9 @@ sl_event = {}
 
 function sl_event:new(name)
   if name then
-    sl_checkarg(name, "string")
+    sl_checktype(name, "string")
   end
-  local o = {callbacks={}, name=name}
+  local o = {callbacks={}, name=name, typ="event"}
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})
   if name then
@@ -38,13 +38,13 @@ function sl_event:new(name)
 end
 
 function sl_event:register(callback)
-  sl_checkarg(callback, "function")
+  sl_checktype(callback, "function")
   self.callbacks[callback] = callback
   return callback
 end
 
 function sl_event:unregister(callback)
-  sl_checkarg(callback, "function")
+  sl_checktype(callback, "function")
   self.callbacks[callback] = nil
 end
 
@@ -56,7 +56,7 @@ end
 
 function event(name)
   if name then
-    sl_checkarg(name, "string")
+    sl_checktype(name, "string")
   end
   local e = sl_event[name]
   if not e then
@@ -72,6 +72,7 @@ function event_or(...)
   local counter = 0
   local ct = sl_simtime.timeline
   for i,v in ipairs(arg) do
+    sl_checktype(v, "event")
     v:register(function(...)
       if ct ~= sl_simtime.timeline then
         counter = 0
@@ -92,6 +93,7 @@ function event_and(...)
   local counter = 0
   local ct = sl_simtime.timeline
   for i,v in ipairs(arg) do
+    sl_checktype(v, "event")
     max = max + 1
     v:register(function(...)
       if ct ~= sl_simtime.timeline then

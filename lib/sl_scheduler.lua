@@ -28,7 +28,7 @@ setmetatable(sl_scheduler.running_q, {__mode = "k"})
 setmetatable(sl_scheduler.sleeping_q, {__mode = "k"})
 
 function sl_scheduler:thread(body)
-  sl_checkarg(body, "function")
+  sl_checktype(body, "function")
   local th = coroutine.create(body)
   self.running_q[th] = th
   self.running_q_size = self.running_q_size + 1
@@ -37,6 +37,7 @@ end
 
 function sl_scheduler:sleep()
   local th = self.current
+  sl_checktype(th, "thread")
   self.sleeping_q[th] = th
   if self.running_q[th] then
     self.running_q[th] = nil
@@ -46,6 +47,7 @@ function sl_scheduler:sleep()
 end
 
 function sl_scheduler:wake(th)
+  sl_checktype(th, "thread")
   self.running_q[th] = th
   self.running_q_size = self.running_q_size + 1
   self.sleeping_q[th] = nil

@@ -50,8 +50,8 @@ function sl_simtime:st(t)
 end
 
 function sl_simtime:new(delay)
-  sl_checkarg(delay, "number")
-  local o = {callbacks={}}
+  sl_checktype(delay, "number")
+  local o = {callbacks={}, typ="simtime"}
   self.size = self.size + 1
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})
@@ -61,13 +61,13 @@ function sl_simtime:new(delay)
 end
 
 function sl_simtime:register(callback)
-  sl_checkarg(callback, "function")
+  sl_checktype(callback, "function")
   self.callbacks[callback] = callback
   return callback
 end
 
 function sl_simtime:unregister(callback)
-  sl_checkarg(callback, "function")
+  sl_checktype(callback, "function")
   self.callbacks[callback] = nil
 end
 
@@ -81,10 +81,10 @@ function sl_simtime:run(delta, max)
   self.stopped = false
   local ct = sl_simtime.timeline
   if delta then
-    sl_checkarg(delta, "number")
+    sl_checktype(delta, "number")
   end
   if max then
-    sl_checkarg(max, "number")
+    sl_checktype(max, "number")
   end
   if not max then
     max = delta
@@ -119,10 +119,10 @@ function sl_simtime:stop()
 end
 
 function simtime(delay, callback)
-  sl_checkarg(delay, "number")
+  sl_checktype(delay, "number")
   local st = sl_simtime:new(delay)
   if callback then
-    sl_checkarg(callback, "function")
+    sl_checktype(callback, "function")
     st:register(callback)
   end
   return st

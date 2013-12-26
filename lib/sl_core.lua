@@ -30,7 +30,11 @@ require "sl_logger"
 require "sl_util"
 
 function wait(e)
+  if type(e) ~= "number" then
+    sl_checktype(e, "event")
+  end
   local th = sl_scheduler.current
+  sl_checktype(th, "thread")
   if type(e) == "number" then
     e = simtime(e)
   end
@@ -46,7 +50,10 @@ function always(e, body)
   if not body then
     body, e = e, nil
   end
-  sl_checkarg(body, "function")
+  if e and type(e) ~= "number" then
+    sl_checktype(e, "event")
+  end
+  sl_checktype(body, "function")
   return sl_scheduler:thread(function()
     while true do
       if e then
@@ -58,7 +65,7 @@ function always(e, body)
 end
 
 function initial(body)
-  sl_checkarg(body, "function")
+  sl_checktype(body, "function")
   return sl_scheduler:thread(function()
     wait(0)
     body()
@@ -67,10 +74,10 @@ end
 
 function run(body, delay)
   if body then
-    sl_checkarg(body, "function")
+    sl_checktype(body, "function")
   end
   if delay then
-    sl_checkarg(delay, "number")
+    sl_checktype(delay, "number")
   end
   sl_simulator:run(body, delay)
 end

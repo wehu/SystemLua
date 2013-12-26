@@ -20,8 +20,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
-function sl_checkarg(a, t)
-  if type(a) ~= t then
-    err("expect an argument of "..t..", but got an argument of "..type(a))
+function sl_checktype(a, t)
+  local at = type(a)
+  if at == "table" and a.typ then
+    at = a.typ
+  end
+  if at ~= t then
+    err("expect type "..t..", but got type "..at)
   end
 end
+
