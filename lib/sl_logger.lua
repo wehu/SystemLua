@@ -25,7 +25,6 @@ require "sl_simtime"
 function sl_logger(t, ...)
   print("[System-Lua "..sl_simtime.timeline.." "..t.."]:", unpack(arg))
   if t == "E" then
-    --print(debug.traceback())
     error(unpack(arg))
   end
 end
@@ -36,7 +35,7 @@ end
 function err(...)
   sl_logger("E", unpack(arg))
 end
-function debug(...)
+function deb(...)
   sl_logger("D", unpack(arg))
 end
 function warn(...)

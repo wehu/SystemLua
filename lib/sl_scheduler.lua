@@ -61,9 +61,9 @@ function sl_scheduler:run()
         break
       end
       self.current = th
-      local _, err = coroutine.resume(th)
-      if err then
-        error(err)
+      local _, e = coroutine.resume(th)
+      if e then
+        err(e)
       end
       if coroutine.status(th) == "dead" then
         if self.running_q[th] then
