@@ -29,6 +29,8 @@
 
 static lua_State *L = NULL;
 
+static int lua_stack_base = 0;
+
 static int get_simtime(){
   s_vpi_time time_s = {vpiSimTime};
   vpi_get_time(NULL, &time_s);
@@ -42,14 +44,14 @@ static void sys_lua_sync(){
 
   lua_getglobal(L, "sync_signals");
 
-  if (lua_pcall(L, 0, 0, 0) != 0)
+  if (lua_pcall(L, 0, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
 
   lua_getglobal(L, "run");
   lua_pushnil(L);
   lua_pushnumber(L, delay);
 
-  if (lua_pcall(L, 2, 0, 0) != 0)
+  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
 
 }
@@ -118,6 +120,8 @@ PLI_INT32 sys_lua_calltf(PLI_BYTE8* data) {
     static s_cb_data cb_data_s = {cbEndOfSimulation, callback};
     vpi_register_cb(&cb_data_s);
     L = lua_open();
+    //assert(L);
+    luaopen_debug(L);
     luaL_openlibs(L);
     lua_pushcfunction(L, write_signal);
     lua_setglobal(L, "sim_write_signal");
@@ -137,6 +141,9 @@ PLI_INT32 sys_lua_calltf(PLI_BYTE8* data) {
     if(luaL_dofile(L, "sl_core.lua") != 0)
 #endif
       error(L, "%s", lua_tostring(L, -1));
+
+    lua_getglobal(L, "sl_traceback");
+    lua_stack_base = lua_gettop(L);
   };
 
   vpiHandle systfH = vpi_handle(vpiSysTfCall, NULL);
@@ -151,8 +158,10 @@ PLI_INT32 sys_lua_calltf(PLI_BYTE8* data) {
       val.format = vpiStringVal;
       vpi_get_value(argH, &val);
       strcpy(filename, val.value.str);
-      if(luaL_dofile(L, filename) != 0)
-        error(L, "%s", lua_tostring(L, -1));;
+      if(luaL_loadfile(L, filename) != 0)
+        error(L, "%s", lua_tostring(L, -1));
+      if(lua_pcall(L, 0, 0, lua_stack_base) != 0)
+        error(L, "%s", lua_tostring(L, -1));
       argH = vpi_scan(argI);
     }
   }

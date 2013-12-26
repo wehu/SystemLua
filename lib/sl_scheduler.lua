@@ -63,6 +63,7 @@ function sl_scheduler:run()
       self.current = th
       local _, e = coroutine.resume(th)
       if e then
+        print(debug.traceback(th, e))
         err(e)
       end
       if coroutine.status(th) == "dead" then

@@ -30,3 +30,7 @@ function sl_checktype(a, t)
   end
 end
 
+function sl_traceback(msg)
+  print(debug.traceback())
+  return msg
+end
