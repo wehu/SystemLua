@@ -37,26 +37,39 @@ function sl_component:new(name, body)
   end
   local o = {name=name, typ="component", path=name,
     parent=sl_current_component,
+    children={},
     id=sl_component.ids}
   sl_component.ids = sl_component.ids + 1
   if sl_current_component then
     o.path = sl_current_component.path.."."..name
+    table.insert(sl_current_component.children, o)
   end
   setmetatable(o, {__index = sl_component})
   if body then
     o:_new(body)
   end
   sl_component[o.path] = o
-  sl_component.ids = sl_component.ids + 1
   return o
 end
 
 function sl_component:_new(body)
   local saved_sl_current_component = sl_current_component
   sl_current_component = self
-  local _, e = pcall(body)
+  local _, e = pcall(function()
+    body(self)
+  end)
   sl_current_component = saved_sl_current_component
   if e then error(e) end
+end
+
+function sl_component:notify_phase(name)
+  sl_checktype(name, "string")
+  for i, v in ipairs(self.children) do
+    v:notify_phase(name)
+  end
+  if self[name] then
+    self.name()
+  end
 end
 
 function component(name, body)
