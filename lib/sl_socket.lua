@@ -185,9 +185,12 @@ end
 
 function socket(name)
   sl_checktype(name, "string")
-  local s = sl_socket[name]
-  if not s and sl_current_component then
+  local s = nil
+  if sl_current_component then
     s = sl_socket[sl_current_component.path.."."..name]
+  end
+  if not s then
+    s = sl_socket[name]
   end
   if not s then
     s = sl_socket:new(name)

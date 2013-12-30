@@ -84,9 +84,12 @@ function pipe(name)
   if name then
     sl_checktype(name, "string")
   end
-  local p = sl_pipe[name]
-  if not p and name and sl_current_component then
+  local p = nil
+  if name and sl_current_component then
     p = sl_pipe[sl_current_component.path.."."..name]
+  end
+  if name and not p then
+    p = sl_pipe[name]
   end
   if not p then
     p = sl_pipe:new(name)

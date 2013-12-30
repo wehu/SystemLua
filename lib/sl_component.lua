@@ -74,9 +74,12 @@ end
 
 function component(name, body)
   sl_checktype(name, "string")
-  local c = sl_component[name]
-  if not c and sl_current_component then
+  local c = nil
+  if sl_current_component then
     c = sl_component[sl_current_component.path.."."..name]
+  end
+  if not c then
+    c = sl_component[name]
   end
   if not c then
     c = sl_component:new(name)

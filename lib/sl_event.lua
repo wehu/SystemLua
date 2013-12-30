@@ -70,9 +70,12 @@ function event(name)
   if name then
     sl_checktype(name, "string")
   end
-  local e = sl_event[name]
-  if not e and name and sl_current_component then
+  local e = nil
+  if name and sl_current_component then
     e = sl_event[sl_current_component.path.."."..name]
+  end
+  if name and not e then
+    e = sl_event[name]
   end
   if not e then
     e = sl_event:new(name)

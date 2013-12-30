@@ -91,9 +91,12 @@ function signal(name, data)
   if name then
     sl_checktype(name, "string")
   end
-  local s = sl_signal[name]
-  if not s and name and sl_current_component then
+  local s = nil
+  if name and sl_current_component then
     s = sl_signal[sl_current_component.path.."."..name]
+  end
+  if name and not s then
+    s = sl_signal[name]
   end
   if not s then
     s = sl_signal:new(name, data)
