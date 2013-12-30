@@ -20,71 +20,54 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
-require "sl_simtime"
-require "sl_scheduler"
-require "sl_event"
-require "sl_signal"
-require "sl_pipe"
-require "sl_simulator"
+require "sl_object"
 require "sl_logger"
 require "sl_util"
 
-require "sl_component"
+sl_component = sl_object:new()
 
-function wait(e)
-  if type(e) ~= "number" then
-    sl_checktype(e, "event")
-  end
-  local th = sl_scheduler.current
-  sl_checktype(th, "thread")
-  if type(e) == "number" then
-    e = simtime(e)
-  end
-  local cb = nil
-  cb = e:register(function()
-    sl_scheduler:wake(th)
-    e:unregister(cb) 
-  end)
-  sl_scheduler:sleep()
-end
+sl_current_component_heir_path = ""
 
-function always(e, body)
-  if not body then
-    body, e = e, nil
+function sl_component:new(name, body)
+  sl_checktype(name, "string")
+  if string.match(name, "%.") then
+    err("attempt to create a component \'"..name.."\' whose name includes \".\"")
   end
-  if e and type(e) ~= "number" then
-    sl_checktype(e, "event")
-  end
-  sl_checktype(body, "function")
-  return sl_scheduler:thread(function()
-    while true do
-      if e then
-        wait(e)
-      end
-      body()
-    end
-  end)
-end
-
-function initial(body)
-  sl_checktype(body, "function")
-  return sl_scheduler:thread(function()
-    wait(0)
-    body()
-  end)
-end
-
-function run(body, delay)
   if body then
     sl_checktype(body, "function")
   end
-  if delay then
-    sl_checktype(delay, "number")
+  local o = sl_object:new()
+  setmetatable(o, {__index = sl_component})
+  o.name = name
+  o.path = sl_current_component_heir_path..name
+  if body then
+    o:_new(body)
   end
-  sl_simulator:run(body, delay)
+  sl_component[o.path] = o
+  return o
 end
 
-function stop()
-  sl_simulator:stop()
+function sl_component:_new(body)
+  local saved_sl_current_component_heir_path = sl_current_component_heir_path
+  sl_current_component_heir_path = self.path.."."
+  local _, e = pcall(body)
+  sl_current_component_heir_path = saved_sl_current_component_heir_path
+  if e then error(e) end
+end
+
+function component(name, body)
+  sl_checktype(name, "string")
+  local c = sl_component[name]
+  if not c then
+    c = sl_component[sl_current_component_heir_path..name]
+  end
+  if not c then
+    c = sl_component:new(name)
+  end
+  if body then
+    sl_checktype(body, "function")
+    c:_new(body) 
+  end
+  return c
 end
 
