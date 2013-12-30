@@ -61,29 +61,31 @@ static int construct_top(const char* filename, const char * instance_name){
 }
 
 static int notify_phase(const char * phase_group,
-                           const char * phase_name,
-                           unsigned int phase_action) {
+                        const char * phase_name,
+                        unsigned int phase_action) {
 }
 
 static int notify_tree_phase(int          target_id,
-                                const char * phase_group,
-                                const char * phase_name) {
+                             const char * phase_group,
+                             const char * phase_name) {
 }
 
 static int notify_runtime_phase(const char *     phase_group,
-                                   const char *     phase_name,
-                                   unsigned int     phase_action,
-                                   uvm_ml_time_unit time_unit,
-                                   double           time_value,
-                                   unsigned int *   participate) {
+                                const char *     phase_name,
+                                unsigned int     phase_action,
+                                uvm_ml_time_unit time_unit,
+                                double           time_value,
+                                unsigned int *   participate) {
 }
 
 static int find_connector_id_by_name(const char * path) {
-  lua_getglobal(L, "sl_socket");
-  lua_getfield(L, -1, path);
+  lua_getglobal(L, "socket");
+  lua_pushstring(L, path);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
   lua_getfield(L, -1, "id");
   int id = lua_tointeger(L, -1);
-  lua_pop(L, 2);
+  lua_pop(L, 1);
   return id;
 }
 
@@ -150,8 +152,7 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
 static unsigned initialize_adapter() {
   backplane_open();
   assert(backplane_handle != NULL);
-  bp_api_struct* (*bp_get_provided_tray_ptr)() = (bp_api_struct* (*)())dlsym(backplane_handle, backplane_get_provided_tray
-);
+  bp_api_struct* (*bp_get_provided_tray_ptr)() = (bp_api_struct* (*)())dlsym(backplane_handle, backplane_get_provided_tray);
   bpProvidedAPI = (bp_get_provided_tray_ptr)();
   assert(bpProvidedAPI != NULL);
   char *frmw_ids[3] = {(char*)"UVMSL", (char*)"SL",(char*)""};
