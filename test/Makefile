@@ -15,3 +15,5 @@ test_socket:
 test_pli:
 	LD_LIBRARY_PATH=$(SYS_LUA_PLI):$(LD_LIBRARY_PATH) \
 	vcs -full64 -R -P $(SYS_LUA_PLI)/sys_lua.tab +vpi -L$(SYS_LUA_PLI) -lsys_lua tb.v
+
+all: test test_component test_socket test_pli
