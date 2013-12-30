@@ -24,7 +24,7 @@ require "sl_component"
 require "sl_util"
 require "sl_event"
 
-sl_signal = {}
+sl_signal = {ids=0}
 setmetatable(sl_signal, {__mode = "k"})
 
 local sl_binding_signals = {}
@@ -45,9 +45,16 @@ function sl_signal:new(name, data)
        new_data=data,
        old_data=data,
        name=name,
+       parent=sl_current_component,
+       id=sl_signal.ids,
        typ="signal"}
+  sl_signal.ids = sl_signal.ids + 1
   if name then
-    o.path = sl_current_component_heir_path..name
+    if sl_current_component then
+      o.path = sl_current_component.path.."."..name
+    else
+      o.path = name
+    end
   end
   setmetatable(o, {__index = self})
   if name then
@@ -85,8 +92,8 @@ function signal(name, data)
     sl_checktype(name, "string")
   end
   local s = sl_signal[name]
-  if not s and name then
-    s = sl_signal[sl_current_component_heir_path..name]
+  if not s and name and sl_current_component then
+    s = sl_signal[sl_current_component.path.."."..name]
   end
   if not s then
     s = sl_signal:new(name, data)

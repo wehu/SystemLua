@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 require "sl_util"
 
-sl_pipe = {}
+sl_pipe = {ids=0}
 
 function sl_pipe:new(name)
   if name then
@@ -35,10 +35,17 @@ function sl_pipe:new(name)
        event_wr=event(),
        event_pk=event(),
        queue={},
+       id=sl_pipe.ids,
+       parent=sl_current_component,
        name=name,
        typ="pipe"}
+  sl_pipe.ids = sl_pipe.ids + 1
   if name then
-    o.path = sl_current_component_heir_path..name
+    if sl_current_component then
+      o.path = sl_current_component.path.."."..name
+    else
+      o.path = name
+    end
   end
   setmetatable(o, {__index = self})
   if name then
@@ -78,8 +85,8 @@ function pipe(name)
     sl_checktype(name, "string")
   end
   local p = sl_pipe[name]
-  if not p and name then
-    p = sl_pipe[sl_current_component_heir_path..name]
+  if not p and name and sl_current_component then
+    p = sl_pipe[sl_current_component.path.."."..name]
   end
   if not p then
     p = sl_pipe:new(name)

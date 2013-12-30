@@ -23,11 +23,11 @@ THE SOFTWARE.
 require "sl_component"
 require "sl_util"
 
-sl_socket = {}
+sl_socket = {ids=0}
 
 function sl_socket:new(name)
   sl_checktype(name, "string")
-  if sl_current_component_heir_path == "" then
+  if not sl_current_component then
     err("attempt to create a socket \'"..name.."\' out of component")
   end
   if string.match(name, "%.") then
@@ -35,9 +35,16 @@ function sl_socket:new(name)
   end
   local o = {name=name,
     typ="socket",
-    path=sl_current_component_heir_path..name,
+    path=name,
     peer=nil,
+    id=sl_socket.ids,
+    parent=sl_current_component,
+    tlm1_cbs={},
     tlm2_cbs={}}
+  if sl_current_component then
+    o.path = sl_current_component.path.."."..name
+  end
+  sl_socket.ids = sl_socket.ids + 1
   setmetatable(o, {__index = sl_socket})
   sl_socket[o.path] = o
   return o
@@ -59,19 +66,55 @@ function sl_socket:bind(p)
   p.peer = self
 end
 
+function sl_socket:check_tlm1_cb(cb_name)
+  if not self.tlm1_cbs[cb_name] then
+    err("socket \'"..self.name.."\' has no callback for \'"..cb_name.."\'")
+  end
+end
+
 function sl_socket:put(...)
   self:check_peer()
-  return self.peer:put(...)
+  self.peer:check_tlm1_cb("put")
+  return self.peer.tlm1_cbs["put"](...)
+end
+
+function sl_socket:register_put(cb)
+  sl_checktype(cb, "function")
+  self.tlm1_cbs["put"] = cb
+end
+
+function sl_socket:unregister_put()
+  self.tlm1_cbs["put"] = nil
 end
 
 function sl_socket:get()
   self:check_peer()
-  return self.peer:get()
+  self.peer:check_tlm1_cb("get")
+  return self.peer.tlm1_cbs["get"]()
+end
+
+function sl_socket:register_get(cb)
+  sl_checktype(cb, "function")
+  self.tlm1_cbs["get"] = cb
+end
+
+function sl_socket:unregister_get()
+  self.tlm1_cbs["get"] = nil
 end
 
 function sl_socket:peek()
   self:check_peer()
-  return self.peer:peek()
+  self.peer:check_tlm1_cb("peek")
+  return self.peer.tlm1_cbs["peek"]()
+end
+
+function sl_socket:register_peek(cb)
+  sl_checktype(cb, "function")
+  self.tlm1_cbs["peek"] = cb
+end
+
+function sl_socket:unregister_peek()
+  self.tlm1_cbs["peek"] = nil
 end
 
 function sl_socket:check_tlm2_cb(cb_name)
@@ -143,8 +186,8 @@ end
 function socket(name)
   sl_checktype(name, "string")
   local s = sl_socket[name]
-  if not s then
-    s = sl_socket[sl_current_component_heir_path..name]
+  if not s and sl_current_component then
+    s = sl_socket[sl_current_component.path.."."..name]
   end
   if not s then
     s = sl_socket:new(name)

@@ -23,9 +23,9 @@ THE SOFTWARE.
 require "sl_logger"
 require "sl_util"
 
-sl_component = {}
+sl_component = {ids=0}
 
-sl_current_component_heir_path = ""
+sl_current_component = nil
 
 function sl_component:new(name, body)
   sl_checktype(name, "string")
@@ -35,28 +35,35 @@ function sl_component:new(name, body)
   if body then
     sl_checktype(body, "function")
   end
-  local o = {name=name, typ="component", path=sl_current_component_heir_path..name}
+  local o = {name=name, typ="component", path=name,
+    parent=sl_current_component,
+    id=sl_component.ids}
+  sl_component.ids = sl_component.ids + 1
+  if sl_current_component then
+    o.path = sl_current_component.path.."."..name
+  end
   setmetatable(o, {__index = sl_component})
   if body then
     o:_new(body)
   end
   sl_component[o.path] = o
+  sl_component.ids = sl_component.ids + 1
   return o
 end
 
 function sl_component:_new(body)
-  local saved_sl_current_component_heir_path = sl_current_component_heir_path
-  sl_current_component_heir_path = self.path.."."
+  local saved_sl_current_component = sl_current_component
+  sl_current_component = self
   local _, e = pcall(body)
-  sl_current_component_heir_path = saved_sl_current_component_heir_path
+  sl_current_component = saved_sl_current_component
   if e then error(e) end
 end
 
 function component(name, body)
   sl_checktype(name, "string")
   local c = sl_component[name]
-  if not c then
-    c = sl_component[sl_current_component_heir_path..name]
+  if not c and sl_current_component then
+    c = sl_component[sl_current_component.path.."."..name]
   end
   if not c then
     c = sl_component:new(name)

@@ -23,7 +23,7 @@ THE SOFTWARE.
 require "sl_component"
 require "sl_util"
 
-sl_event = {}
+sl_event = {ids=0}
 
 function sl_event:new(name)
   if name then
@@ -32,9 +32,14 @@ function sl_event:new(name)
   if name and string.match(name, "%.") then
     err("attempt to create an event \'"..name.."\' whose name includes \".\"")
   end
-  local o = {callbacks={}, name=name, typ="event"}
+  local o = {callbacks={}, name=name, typ="event", id=sl_event.ids, parent=sl_current_component}
+  sl_event.ids = sl_event.ids + 1
   if name then
-    o.path = sl_current_component_heir_path..name
+    if sl_current_component then
+      o.path = sl_current_component.path.."."..name
+    else
+      o.path = name
+    end
   end
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})
@@ -66,8 +71,8 @@ function event(name)
     sl_checktype(name, "string")
   end
   local e = sl_event[name]
-  if not e and name then
-    e = sl_event[sl_current_component_heir_path..name]
+  if not e and name and sl_current_component then
+    e = sl_event[sl_current_component.path.."."..name]
   end
   if not e then
     e = sl_event:new(name)
