@@ -28,15 +28,21 @@ function sl_pipe:new(name)
   if name then
     sl_checktype(name, "string")
   end
+  if string.match(name, "%.") then
+    err("attempt to create a signal \'"..name.."\' whose name includes \".\"")
+  end
   local o = {event_rd=event(),
        event_wr=event(),
        event_pk=event(),
        queue={},
        name=name,
        typ="pipe"}
+  if name then
+    o.path = sl_current_component_heir_path..name
+  end
   setmetatable(o, {__index = self})
   if name then
-    self[name] = o
+    self[o.path] = o
   end
   return o
 end
@@ -72,6 +78,9 @@ function pipe(name)
     sl_checktype(name, "string")
   end
   local p = sl_pipe[name]
+  if not p and name then
+    p = sl_pipe[sl_current_component_heir_path..name]
+  end
   if not p then
     p = sl_pipe:new(name)
   end

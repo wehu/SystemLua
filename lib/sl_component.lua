@@ -20,11 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
-require "sl_object"
 require "sl_logger"
 require "sl_util"
 
-sl_component = sl_object:new()
+sl_component = {}
 
 sl_current_component_heir_path = ""
 
@@ -36,10 +35,8 @@ function sl_component:new(name, body)
   if body then
     sl_checktype(body, "function")
   end
-  local o = sl_object:new()
+  local o = {name=name, typ="component", path=sl_current_component_heir_path..name}
   setmetatable(o, {__index = sl_component})
-  o.name = name
-  o.path = sl_current_component_heir_path..name
   if body then
     o:_new(body)
   end

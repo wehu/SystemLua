@@ -20,6 +20,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+local sl_path = string.gsub(debug.getinfo(1).source, "^@(.+\/)[^\/]+$", "%1").."?.lua"
+
+if package.path then
+  package.path = package.path..";"..sl_path
+else
+  package.path = sl_path
+end
+
 require "sl_simtime"
 require "sl_scheduler"
 require "sl_event"
@@ -30,6 +38,7 @@ require "sl_logger"
 require "sl_util"
 
 require "sl_component"
+require "sl_socket"
 
 function wait(e)
   if type(e) ~= "number" then

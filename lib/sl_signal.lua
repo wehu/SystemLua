@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_component"
 require "sl_util"
 require "sl_event"
 
@@ -32,6 +33,9 @@ function sl_signal:new(name, data)
   if name then
     sl_checktype(name, "string")
   end
+  if string.match(name, "%.") then
+    err("attempt to create a signal \'"..name.."\' whose name includes \".\"")
+  end
   if not data then
     data = 0
   end
@@ -42,9 +46,12 @@ function sl_signal:new(name, data)
        old_data=data,
        name=name,
        typ="signal"}
+  if name then
+    o.path = sl_current_component_heir_path..name
+  end
   setmetatable(o, {__index = self})
   if name then
-    self[name] = o
+    self[o.path] = o
   end
   return o
 end
@@ -78,6 +85,9 @@ function signal(name, data)
     sl_checktype(name, "string")
   end
   local s = sl_signal[name]
+  if not s and name then
+    s = sl_signal[sl_current_component_heir_path..name]
+  end
   if not s then
     s = sl_signal:new(name, data)
   end

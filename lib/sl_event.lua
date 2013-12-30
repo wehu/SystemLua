@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_component"
 require "sl_util"
 
 sl_event = {}
@@ -28,11 +29,17 @@ function sl_event:new(name)
   if name then
     sl_checktype(name, "string")
   end
+  if name and string.match(name, "%.") then
+    err("attempt to create an event \'"..name.."\' whose name includes \".\"")
+  end
   local o = {callbacks={}, name=name, typ="event"}
+  if name then
+    o.path = sl_current_component_heir_path..name
+  end
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})
   if name then
-    self[name] = o
+    self[o.path] = o
   end
   return o
 end
@@ -59,6 +66,9 @@ function event(name)
     sl_checktype(name, "string")
   end
   local e = sl_event[name]
+  if not e and name then
+    e = sl_event[sl_current_component_heir_path..name]
+  end
   if not e then
     e = sl_event:new(name)
   end

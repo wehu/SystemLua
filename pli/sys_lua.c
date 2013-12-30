@@ -131,10 +131,6 @@ PLI_INT32 sys_lua_calltf(PLI_BYTE8* data) {
     lua_setglobal(L, "sim_bind_signal");
     lua_pushcfunction(L, sim_finish);
     lua_setglobal(L, "sim_finish");
-#ifdef SYS_LUA_LIB
-    lua_pushstring(L, SYS_LUA_LIB);
-    lua_setglobal(L, "LUA_PATH");
-#endif
 #ifdef SYS_LUA_CORE_FILE
     if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
 #else
