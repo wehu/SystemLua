@@ -94,8 +94,8 @@ function sl_simtime:run(delta, max)
       return
     end
     if not delay or t <= ct + delay then
+      sl_simtime.timeline = t
       if not max or t <= ct + max then
-        sl_simtime.timeline = t
         for st in pairs(ts) do
           if self.stopped then
             return

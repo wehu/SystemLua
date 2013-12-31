@@ -45,6 +45,7 @@ function sl_simulator:run(body, delay)
     if not delay or sl_simtime.timeline <= deadline then
       sl_scheduler:run()
     end
+    
   until sl_simtime.size == 0 or (delay and sl_simtime.timeline >= deadline)
   if delay then
     sl_simtime.timeline = deadline

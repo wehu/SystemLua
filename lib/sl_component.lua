@@ -45,6 +45,13 @@ function sl_component:new(name, body)
     proxy=false,
     foreign=false,
     children={},
+    static_phases={
+      build=true,
+      connect=true
+    },
+    runtime_phases={
+      run=true
+    },
     phases_done={},
     id=sl_component.ids}
   sl_component.ids = sl_component.ids + 1
@@ -80,9 +87,10 @@ function sl_component:notify_phase(name)
   for i, v in ipairs(self.children) do
     v:notify_phase(name)
   end
-  if self[name] and not self.phases_done[name] then
-    self[name](self)
+  if self[name] and not self.phases_done[name] and self.static_phases[name] then
     self.phases_done[name] = true
+    self[name](self)
+  elseif self.runtime_phases[name] then
   end
 end
 
@@ -91,12 +99,12 @@ function sl_component:notify_runtime_phase(name)
   --for i, v in ipairs(self.children) do
   --  v:notify_runtime_phase(name)
   --end
-  if self[name] and not self.phases_done[name] then
+  if self[name] and not self.phases_done[name] and self.runtime_phases[name] then
+    self.phases_done[name] = true
     local o = self
     sl_scheduler:thread(function ()
       self[name](o)
     end)
-    self.phases_done[name] = true
   end
 end
 
