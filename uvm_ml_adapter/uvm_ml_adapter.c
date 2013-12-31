@@ -195,28 +195,33 @@ static void backplane_open()
 {
   // The backplane library may be compiled in or preloaded
   // So, start with the 'global' namespace
-  backplane_handle  = dlopen(0, RTLD_LAZY);
-  if ( backplane_handle != 0) {
-      if ( dlsym(backplane_handle, backplane_get_provided_tray) != 0) {
-          return;
-      }
+  backplane_handle = dlopen(0, RTLD_LAZY);
+  if(backplane_handle != 0) {
+    if(dlsym(backplane_handle, backplane_get_provided_tray) != 0) {
+      return;
+    };
+  };
+  const char* const backplane_lib_name = "libml_uvm.so";
+  char * lib_location = getenv("UVM_ML_OVERRIDE");
+  if(lib_location == NULL) {
+    lib_location = getenv("UNILANG_OVERRIDE");
   }
-  //const char* const backplane_lib_name = "libml_uvm.so";
-  //char * lib_location = getenv("UVM_ML_OVERRIDE");
-  //if (lib_location == NULL) {
-  //    lib_location = getenv("UNILANG_OVERRIDE");
-  //}
-  //f (lib_location) {
-  //    backplane_handle  = dlopen(((string)lib_location + "/"+backplane_lib_name).c_str(), RTLD_LAZY | RTLD_GLOBAL);
-  //} else {
-  //    backplane_handle  = dlopen(backplane_lib_name, RTLD_LAZY | RTLD_GLOBAL);
-  //}
+  if(lib_location) {
+    char lib_file[1024*4];
+    strcpy(lib_file, lib_location);
+    strcat(lib_file, "/");
+    strcat(lib_file, backplane_lib_name);
+    backplane_handle = dlopen(lib_file, RTLD_LAZY | RTLD_GLOBAL);
+  } else {
+    backplane_handle = dlopen(backplane_lib_name, RTLD_LAZY | RTLD_GLOBAL);
+  }
   if (backplane_handle == NULL) {
-      //string err_str = (char *) dlerror();
+      char * err_msg = dlerror();
 
       // FIXME - use proper error messaging and proper per-simulator graceful shutdown mechanism here
 
-      //::std::cout << "Failed to open the backplane library " << backplane_lib_name << " for the following reason: " << err_str << ::std::endl;
+      fprintf(stderr, "Failed to open the backplane library %s for the following reason: %s\n",
+        backplane_lib_name, err_msg);
       exit(0);
   }
 
