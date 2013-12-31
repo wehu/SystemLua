@@ -23,4 +23,5 @@ THE SOFTWARE.
 require "sl_tlm1"
 
 function ml_connect(path1, path2)
+  return uvm_sl_ml_connect(path1, path2)
 end

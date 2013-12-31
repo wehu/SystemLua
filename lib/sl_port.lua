@@ -102,3 +102,13 @@ function find_port_by_id(id)
   end
   return p
 end
+
+function find_port_by_full_name(name)
+  sl_checktype(name, "string")
+  local p = sl_port.ports[name]
+  if not p then
+    err("cannot find port by id "..name)
+  end
+  return p
+end
+

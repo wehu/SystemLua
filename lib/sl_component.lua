@@ -128,6 +128,7 @@ function component(name, body)
 end
 
 function notify_phase(name)
+  sl_checktype(name, "string")
   for i, v in ipairs(sl_top_components) do
     if name ~= "proxy" then
       v:notify_phase(name)
@@ -136,6 +137,7 @@ function notify_phase(name)
 end
 
 function notify_runtime_phase(name)
+  sl_checktype(name, "string")
   for k, v in pairs(sl_component.components) do
     if v.name ~= "proxy" then
       v:notify_runtime_phase(name)
@@ -175,15 +177,26 @@ function foreign_component(target_fwind, class, name)
   fc.target_fwind = target_fwind
   fc.class = class
   function fc:notify_phase(name)
-    uvm_ml_sl_notify_phase(self.target_fwind, self.parent.id, name)
+    uvm_sl_ml_notify_phase(self.target_fwind, self.parent.id, name)
   end
   return fc
 end
 
 function find_component_by_id(id)
+  sl_checktype(id, "number")
   local c = sl_component_by_id[id]
   if not c then
     err("unknown component by id "..id)
   end
   return c
 end
+
+function find_component_by_full_name(name)
+  sl_checktype(name, "string")
+  local c = sl_component.components[name]
+  if not c then
+    err("unknown component by full name "..name)
+  end
+  return c
+end
+

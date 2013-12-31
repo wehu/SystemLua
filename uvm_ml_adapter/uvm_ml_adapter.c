@@ -18,6 +18,18 @@ static bp_api_struct * bpProvidedAPI = NULL;
 
 static unsigned framework_id = -1;
 
+// provided apis
+static int uvm_sl_ml_connect(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  const char * port_name = luaL_checkstring(L, 1);
+  const char * export_name = luaL_checkstring(L, 2); 
+  unsigned res = BP(connect)(framework_id, port_name, export_name);
+  lua_pushnumber(L, res);
+  return 0;
+}
+
+// required apis
+
 static void set_debug_mode(int mode) {
 }
 
@@ -25,6 +37,10 @@ static void startup() {
   L = lua_open();
   luaopen_debug(L);
   luaL_openlibs(L);
+
+  lua_pushcfunction(L, uvm_sl_ml_connect);
+  lua_setglobal(L, "uvm_sl_ml_connect");
+
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
 #else
@@ -42,7 +58,7 @@ static int construct_top(const char* filename, const char * instance_name){
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
 
-  lua_getglobal(L, "component");
+  lua_getglobal(L, "find_component_by_full_name");
   lua_pushstring(L, instance_name);
 
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
@@ -93,7 +109,7 @@ static int notify_runtime_phase(const char *     phase_group,
 }
 
 static int find_connector_id_by_name(const char * path) {
-  lua_getglobal(L, "port");
+  lua_getglobal(L, "find_port_by_full_name");
   lua_pushstring(L, path);
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
