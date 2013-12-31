@@ -31,15 +31,15 @@ static lua_State *L = NULL;
 
 static int lua_stack_base = 0;
 
-static int get_simtime(){
-  s_vpi_time time_s = {vpiSimTime};
+static double get_simtime(){
+  s_vpi_time time_s = {vpiScaledRealTime };
   vpi_get_time(NULL, &time_s);
-  return time_s.low;
+  return time_s.real;
 }
 
 static void sys_lua_sync(){
-  static int ct = 0;
-  int delay = get_simtime() - ct;
+  static double ct = 0;
+  double delay = get_simtime() - ct;
   ct = get_simtime();
 
   lua_getglobal(L, "sync_signals");
