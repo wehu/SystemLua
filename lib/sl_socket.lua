@@ -23,7 +23,7 @@ THE SOFTWARE.
 require "sl_component"
 require "sl_util"
 
-sl_socket = {ids=0}
+sl_socket = {ids=0, sockets={}}
 
 function sl_socket:new(name)
   sl_checktype(name, "string")
@@ -46,7 +46,7 @@ function sl_socket:new(name)
   end
   sl_socket.ids = sl_socket.ids + 1
   setmetatable(o, {__index = sl_socket})
-  sl_socket[o.path] = o
+  sl_socket.sockets[o.path] = o
   return o
 end
 
@@ -187,10 +187,10 @@ function socket(name)
   sl_checktype(name, "string")
   local s = nil
   if sl_current_component then
-    s = sl_socket[sl_current_component.path.."."..name]
+    s = sl_socket.sockets[sl_current_component.path.."."..name]
   end
   if not s then
-    s = sl_socket[name]
+    s = sl_socket.sockets[name]
   end
   if not s then
     s = sl_socket:new(name)

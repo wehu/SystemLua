@@ -24,8 +24,8 @@ require "sl_component"
 require "sl_util"
 require "sl_event"
 
-sl_signal = {ids=0}
-setmetatable(sl_signal, {__mode = "k"})
+sl_signal = {ids=0, signals={}}
+--setmetatable(sl_signal.signals, {__mode = "k"})
 
 local sl_binding_signals = {}
 
@@ -58,7 +58,7 @@ function sl_signal:new(name, data)
   end
   setmetatable(o, {__index = self})
   if name then
-    self[o.path] = o
+    self.signals[o.path] = o
   end
   return o
 end
@@ -93,10 +93,10 @@ function signal(name, data)
   end
   local s = nil
   if name and sl_current_component then
-    s = sl_signal[sl_current_component.path.."."..name]
+    s = sl_signal.signals[sl_current_component.path.."."..name]
   end
   if name and not s then
-    s = sl_signal[name]
+    s = sl_signal.signals[name]
   end
   if not s then
     s = sl_signal:new(name, data)

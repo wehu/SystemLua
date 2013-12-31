@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 require "sl_util"
 
-sl_pipe = {ids=0}
+sl_pipe = {ids=0, pipes={}}
 
 function sl_pipe:new(name)
   if name then
@@ -49,7 +49,7 @@ function sl_pipe:new(name)
   end
   setmetatable(o, {__index = self})
   if name then
-    self[o.path] = o
+    self.pipes[o.path] = o
   end
   return o
 end
@@ -86,10 +86,10 @@ function pipe(name)
   end
   local p = nil
   if name and sl_current_component then
-    p = sl_pipe[sl_current_component.path.."."..name]
+    p = sl_pipe.pipes[sl_current_component.path.."."..name]
   end
   if name and not p then
-    p = sl_pipe[name]
+    p = sl_pipe.pipes[name]
   end
   if not p then
     p = sl_pipe:new(name)

@@ -22,8 +22,9 @@ THE SOFTWARE.
 
 require "sl_logger"
 require "sl_util"
+require "sl_scheduler"
 
-sl_component = {ids=0}
+sl_component = {ids=0, components={}}
 
 sl_component_by_id = {}
 
@@ -57,7 +58,7 @@ function sl_component:new(name, body)
   if body then
     o:_new(body)
   end
-  sl_component[o.path] = o
+  sl_component.components[o.path] = o
   sl_component_by_id[o.id] = o
   return o
 end
@@ -77,8 +78,21 @@ function sl_component:notify_phase(name)
   for i, v in ipairs(self.children) do
     v:notify_phase(name)
   end
-  if self[name] then
-    self[name](self)
+  if self.components[name] then
+    self.components[name](self)
+  end
+end
+
+function sl_component:notify_runtime_phase(name)
+  sl_checktype(name, "string")
+  --for i, v in ipairs(self.children) do
+  --  v:notify_runtime_phase(name)
+  --end
+  if self.components[name] then
+    local o = self
+    sl_scheduler:thread(function ()
+      self.components[name](o)
+    end)
   end
 end
 
@@ -86,10 +100,10 @@ function component(name, body)
   sl_checktype(name, "string")
   local c = nil
   if sl_current_component then
-    c = sl_component[sl_current_component.path.."."..name]
+    c = sl_component.components[sl_current_component.path.."."..name]
   end
   if not c then
-    c = sl_component[name]
+    c = sl_component.components[name]
   end
   if not c then
     c = sl_component:new(name)
@@ -105,6 +119,14 @@ function notify_phase(name)
   for i, v in ipairs(sl_top_components) do
     if name ~= "proxy" then
       v:notify_phase(name)
+    end
+  end
+end
+
+function notify_runtime_phase(name)
+  for k, v in pairs(sl_component.components) do
+    if v.name ~= "proxy" then
+      v:notify_runtime_phase(name)
     end
   end
 end

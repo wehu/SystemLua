@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <dlfcn.h> 
 #include <stdlib.h>
 #include <bp_provided.h>
@@ -15,12 +16,13 @@ static int lua_stack_base = 0;
 
 static bp_api_struct * bpProvidedAPI = NULL;
 
-static unsigned framework_id = 0;
+static unsigned framework_id = -1;
 
 static void set_debug_mode(int mode) {
 }
 
 static void startup() {
+  L = lua_open();
   luaopen_debug(L);
   luaL_openlibs(L);
 #ifdef SYS_LUA_CORE_FILE
@@ -35,11 +37,6 @@ static void startup() {
 }
 
 static int construct_top(const char* filename, const char * instance_name){
-  //if(luaL_loadfile(L, filename) != 0)
-  //  error(L, "%s", lua_tostring(L, -1));
-  //if(lua_pcall(L, 0, 0, lua_stack_base) != 0)
-  //  error(L, "%s", lua_tostring(L, -1));
-
   lua_getglobal(L, "require");
   lua_pushstring(L, filename);
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
@@ -64,7 +61,7 @@ static int notify_phase(const char * phase_group,
   lua_pushstring(L, phase_name);
   if (lua_pcall(L, 1, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  return 0;
+  return 1;
 }
 
 static int notify_tree_phase(int          target_id,
@@ -79,7 +76,7 @@ static int notify_tree_phase(int          target_id,
   lua_pushstring(L, phase_name);
   if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  return 0;
+  return 1;
 }
 
 static int notify_runtime_phase(const char *     phase_group,
@@ -88,11 +85,11 @@ static int notify_runtime_phase(const char *     phase_group,
                                 uvm_ml_time_unit time_unit,
                                 double           time_value,
                                 unsigned int *   participate) {
-  lua_getglobal(L, "notify_phase");
+  lua_getglobal(L, "notify_runtime_phase");
   lua_pushstring(L, phase_name);
   if (lua_pcall(L, 1, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  return 0;
+  return 1;
 }
 
 static int find_connector_id_by_name(const char * path) {

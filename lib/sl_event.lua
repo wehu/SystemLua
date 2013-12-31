@@ -23,7 +23,7 @@ THE SOFTWARE.
 require "sl_component"
 require "sl_util"
 
-sl_event = {ids=0}
+sl_event = {ids=0, events={}}
 
 function sl_event:new(name)
   if name then
@@ -44,7 +44,7 @@ function sl_event:new(name)
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})
   if name then
-    self[o.path] = o
+    self.events[o.path] = o
   end
   return o
 end
@@ -72,10 +72,10 @@ function event(name)
   end
   local e = nil
   if name and sl_current_component then
-    e = sl_event[sl_current_component.path.."."..name]
+    e = sl_event.events[sl_current_component.path.."."..name]
   end
   if name and not e then
-    e = sl_event[name]
+    e = sl_event.events[name]
   end
   if not e then
     e = sl_event:new(name)
