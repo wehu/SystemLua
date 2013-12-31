@@ -5,7 +5,7 @@ SYS_LUA_CORE_FILE = $(SYS_LUA_HOME)/lib/sl_core.lua
 BIT = 64bit
 
 ifeq ($(BIT), 64bit)
-#BIT64 = -m64
+BIT64 = -m64
 endif
 
 libuvm_sl_ml.so : uvm_ml_adapter.c Makefile
@@ -14,7 +14,7 @@ libuvm_sl_ml.so : uvm_ml_adapter.c Makefile
 	-I$(UVM_ML_HOME)/ml/backplane \
 	-L$(UVM_ML_HOME)/ml/libs/backplane/$(BIT) -luvm_ml_bp \
         -DSYS_LUA_CORE_FILE=\"$(SYS_LUA_CORE_FILE)\" \
-        -fPIC -shared -o libuvm_sl_ml.so
+        -fPIC -shared -o $@
 
 clean :
 	rm libuvm_sl_ml.so
