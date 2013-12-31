@@ -1,5 +1,5 @@
-#include "bp_provided.h"
-#include "bp_required.h"
+#include <bp_provided.h>
+#include <bp_required.h>
 #include <string.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -9,7 +9,7 @@ static lua_State *L = NULL;
 
 static int lua_stack_base = 0;
 
-static unsigned initialize_adapter();
+static const unsigned initialize_adapter();
 
 #define BP(f) (*bpProvidedAPI->f##_ptr)
 
@@ -23,14 +23,6 @@ static void set_debug_mode(int mode) {
 static void startup() {
   luaopen_debug(L);
   luaL_openlibs(L);
-  lua_pushcfunction(L, write_signal);
-  lua_setglobal(L, "sim_write_signal");
-  lua_pushcfunction(L, read_signal);
-  lua_setglobal(L, "sim_read_signal");
-  lua_pushcfunction(L, bind_signal);
-  lua_setglobal(L, "sim_bind_signal");
-  lua_pushcfunction(L, sim_finish);
-  lua_setglobal(L, "sim_finish");
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
 #else
@@ -43,9 +35,14 @@ static void startup() {
 }
 
 static int construct_top(const char* filename, const char * instance_name){
-  if(luaL_loadfile(L, filename) != 0)
-    error(L, "%s", lua_tostring(L, -1));
-  if(lua_pcall(L, 0, 0, lua_stack_base) != 0)
+  //if(luaL_loadfile(L, filename) != 0)
+  //  error(L, "%s", lua_tostring(L, -1));
+  //if(lua_pcall(L, 0, 0, lua_stack_base) != 0)
+  //  error(L, "%s", lua_tostring(L, -1));
+
+  lua_getglobal(L, "require");
+  lua_pushstring(L, filename);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
 
   lua_getglobal(L, "component");
@@ -63,11 +60,26 @@ static int construct_top(const char* filename, const char * instance_name){
 static int notify_phase(const char * phase_group,
                         const char * phase_name,
                         unsigned int phase_action) {
+  lua_getglobal(L, "notify_phase");
+  lua_pushstring(L, phase_name);
+  if (lua_pcall(L, 1, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
 }
 
 static int notify_tree_phase(int          target_id,
                              const char * phase_group,
                              const char * phase_name) {
+  lua_getglobal(L, "find_component_by_id");
+  lua_pushnumber(L, target_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  lua_getfield(L, -1, "notify_phase");
+  lua_insert(L, -2);
+  lua_pushstring(L, phase_name);
+  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
 }
 
 static int notify_runtime_phase(const char *     phase_group,
@@ -76,6 +88,11 @@ static int notify_runtime_phase(const char *     phase_group,
                                 uvm_ml_time_unit time_unit,
                                 double           time_value,
                                 unsigned int *   participate) {
+  lua_getglobal(L, "notify_phase");
+  lua_pushstring(L, phase_name);
+  if (lua_pcall(L, 1, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
 }
 
 static int find_connector_id_by_name(const char * path) {
@@ -90,9 +107,11 @@ static int find_connector_id_by_name(const char * path) {
 }
 
 static const char* get_connector_intf_name(unsigned connector_id) {
+  return "unknown";
 }
 
 static unsigned is_export_connector(unsigned connector_id) {
+  return 1;
 }
 
 static void synchronize(
@@ -109,8 +128,30 @@ static void synchronize(
     error(L, "%s", lua_tostring(L, -1));
 }
 
+static int create_child_junction_node(
+    const char * component_type_name,
+    const char * instance_name,
+    const char * parent_full_name,
+    int          parent_framework_id,
+    int          parent_junction_node_id
+  ) {
+  lua_getglobal(L, "component_proxy");
+  lua_getglobal(L, component_type_name);
+  lua_pushstring(L, instance_name);
+  lua_pushstring(L, parent_full_name);
+  lua_pushnumber(L, parent_framework_id);
+  lua_pushnumber(L, parent_junction_node_id);
+  if (lua_pcall(L, 5, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  lua_getfield(L, -1, "id");
+  int id = lua_tointeger(L, -1);
+  lua_pop(L, 1);
+  return id;
+}
+
 static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
-  bp_frmw_c_api_struct * required_api = new bp_frmw_c_api_struct();
+  bp_frmw_c_api_struct * required_api = (bp_frmw_c_api_struct*) malloc(sizeof(bp_frmw_c_api_struct));
+  assert(required_api);
   memset(required_api, '\0', sizeof(bp_frmw_c_api_struct));
   required_api->set_trace_mode_ptr = set_debug_mode;
   required_api->startup_ptr = startup;
@@ -143,13 +184,17 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   //required_api->tlm2_nb_transport_bw_ptr = uvm_ml_tlm_rec::tlm2_nb_transport_bw;
   //required_api->tlm2_transport_dbg_ptr = uvm_ml_tlm_rec::tlm2_transport_dbg;
   //required_api->tlm2_turn_off_transaction_mapping_ptr = (uvm_ml_tlm_rec::tlm2_turn_off_transaction_mapping);
-  required_api->synchronize_ptr = uvm_ml_tlm_rec::synchronize;
+  required_api->synchronize_ptr = synchronize;
 
-  //required_api->create_child_junction_node_ptr = uvm_ml_tlm_rec::create_child_junction_node;
+  required_api->create_child_junction_node_ptr = create_child_junction_node;
   return required_api;
 }
 
-static unsigned initialize_adapter() {
+static void * backplane_handle = NULL;
+
+static const char* const backplane_get_provided_tray = "bp_get_provided_tray";
+
+static const unsigned initialize_adapter() {
   backplane_open();
   assert(backplane_handle != NULL);
   bp_api_struct* (*bp_get_provided_tray_ptr)() = (bp_api_struct* (*)())dlsym(backplane_handle, backplane_get_provided_tray);

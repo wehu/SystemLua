@@ -25,7 +25,11 @@ require "sl_util"
 
 sl_component = {ids=0}
 
+sl_component_by_id = {}
+
 sl_current_component = nil
+
+sl_top_components = {}
 
 function sl_component:new(name, body)
   sl_checktype(name, "string")
@@ -37,9 +41,14 @@ function sl_component:new(name, body)
   end
   local o = {name=name, typ="component", path=name,
     parent=sl_current_component,
+    proxy=false,
+    foreign=false,
     children={},
     id=sl_component.ids}
   sl_component.ids = sl_component.ids + 1
+  if not sl_current_component then
+    table.insert(sl_top_components, o)
+  end
   if sl_current_component then
     o.path = sl_current_component.path.."."..name
     table.insert(sl_current_component.children, o)
@@ -49,6 +58,7 @@ function sl_component:new(name, body)
     o:_new(body)
   end
   sl_component[o.path] = o
+  sl_component_by_id[o.id] = o
   return o
 end
 
@@ -68,7 +78,7 @@ function sl_component:notify_phase(name)
     v:notify_phase(name)
   end
   if self[name] then
-    self.name()
+    self[name](self)
   end
 end
 
@@ -91,3 +101,55 @@ function component(name, body)
   return c
 end
 
+function notify_phase(name)
+  for i, v in ipairs(sl_top_components) do
+    if name ~= "proxy" then
+      v:notify_phase(name)
+    end
+  end
+end
+
+local comp_proxy = component("proxy")
+comp_proxy.proxy = true 
+
+function component_proxy(class, name, parent_full_path, parent_fwid, parent_id)
+  local saved_parent = sl_current_component
+  sl_current_component = comp_proxy
+  comp_proxy.path = parent_full_path
+  local cp = nil
+  local _, e = pcall(function ()
+    cp = _G[class](name)
+  end)
+  cp.proxy = true
+  cp.parent_full_path = parent_full_path
+  cp.parent_fwid = parent_fwid
+  cp.parent_id = parent_id
+  if parent_full_path == "" then
+    table.insert(sl_top_components, cp)
+  end
+  comp_proxy.path = "proxy"
+  sl_current_component = saved_parent
+  if e then
+    error(e)
+  end
+  return cp
+end
+
+function foreign_component(target_fwind, class, name)
+  local fc = component(name)
+  fc.foreign = true
+  fc.target_fwind = target_fwind
+  fc.class = class
+  function fc:notify_phase(name)
+    uvm_ml_sl_notify_phase(self.target_fwind, self.parent.id, name)
+  end
+  return fc
+end
+
+function find_component_by_id(id)
+  local c = sl_component_by_id[id]
+  if not c then
+    err("unknown component by id "..id)
+  end
+  return c
+end
