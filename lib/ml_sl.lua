@@ -20,8 +20,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --]]
 
+require "sl_port"
 require "sl_tlm1"
 
+local function create_connector(p)
+  local c = {}
+  if p.typ == "tlm_blocking_put" then
+    function c:put(packet)
+      uvm_sl_ml_request_put(p.id, packet)
+    end
+  end
+  return c
+end
+
 function ml_connect(path1, path2)
-  return uvm_sl_ml_connect(path1, path2)
+  local p1 = sl_port.ports[path1]
+  local p2 = sl_port.ports[path2]
+  --if p1 and p2 then
+  --  return p1:connect(p2)
+  --elseif p1 and not p2 then
+  if p1 then
+    p1.peer = create_connector(p1)
+  --elseif not p1 and p2 then
+  else
+  end
+  return uvm_sl_ml_connect(path1, path2) 
+end
+
+function uvm_sl_ml_request_put_callback(id, packet)
+  local p = find_port_by_id(id)
+  return p:put(packet)
 end

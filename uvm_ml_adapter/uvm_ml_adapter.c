@@ -18,6 +18,11 @@ static bp_api_struct * bpProvidedAPI = NULL;
 
 static unsigned framework_id = -1;
 
+static uvm_ml_time_unit m_time_unit = TIME_UNIT_UNDEFINED;
+static double           m_time_value = -1;
+
+static unsigned fake_call_id = 0;
+
 // provided apis
 static int uvm_sl_ml_connect(lua_State * L) {
   assert (bpProvidedAPI != NULL);
@@ -25,6 +30,26 @@ static int uvm_sl_ml_connect(lua_State * L) {
   const char * export_name = luaL_checkstring(L, 2); 
   unsigned res = BP(connect)(framework_id, port_name, export_name);
   lua_pushnumber(L, res);
+  return 0;
+}
+
+static int uvm_sl_ml_request_put(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned data = luaL_checknumber(L, 2);
+  unsigned call_id = fake_call_id++;
+  unsigned done = 0;
+  unsigned disable = BP(request_put)(
+    framework_id,
+    id,
+    call_id,
+    1, //arg->nblocks,
+    &data, //arg->val,
+    &done,
+    &m_time_unit,
+    &m_time_value
+  );
+  lua_pushnumber(L, disable);
   return 0;
 }
 
@@ -40,6 +65,9 @@ static void startup() {
 
   lua_pushcfunction(L, uvm_sl_ml_connect);
   lua_setglobal(L, "uvm_sl_ml_connect");
+
+  lua_pushcfunction(L, uvm_sl_ml_request_put);
+  lua_setglobal(L, "uvm_sl_ml_request_put");
 
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
@@ -141,6 +169,23 @@ static unsigned is_export_connector(unsigned connector_id) {
   return is_export;
 }
 
+static int request_put(
+  unsigned connector_id,
+  unsigned call_id,
+  unsigned callback_adapter_id,
+  unsigned stream_size,
+  uvm_ml_stream_t stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+  ) {
+  lua_getglobal(L, "uvm_sl_ml_request_put_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, *stream);
+  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
+}
+
 static void synchronize(
     uvm_ml_time_unit      time_unit,
     double                time_value
@@ -191,7 +236,7 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   required_api->is_export_connector_ptr = is_export_connector;
   //required_api->try_put_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_put;
   //required_api->can_put_ptr = uvm_ml_tlm_rec::can_put;
-  //required_api->put_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_put;
+  required_api->put_uvm_ml_stream_request_ptr = request_put;
   //required_api->get_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_get;
   //required_api->get_requested_uvm_ml_stream_ptr = uvm_ml_tlm_rec::get_requested;
   //required_api->try_get_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_get;
