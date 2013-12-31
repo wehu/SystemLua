@@ -93,7 +93,7 @@ static int notify_runtime_phase(const char *     phase_group,
 }
 
 static int find_connector_id_by_name(const char * path) {
-  lua_getglobal(L, "socket");
+  lua_getglobal(L, "port");
   lua_pushstring(L, path);
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
@@ -104,11 +104,25 @@ static int find_connector_id_by_name(const char * path) {
 }
 
 static const char* get_connector_intf_name(unsigned connector_id) {
-  return "unknown";
+  lua_getglobal(L, "find_port_by_id");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  lua_getfield(L, -1, "typ");
+  const char * intf_name = lua_tostring(L, -1);
+  lua_pop(L, 1);
+  return intf_name;
 }
 
 static unsigned is_export_connector(unsigned connector_id) {
-  return 1;
+  lua_getglobal(L, "find_port_by_id");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  lua_getfield(L, -1, "is_export");
+  int is_export = lua_toboolean(L, -1);
+  lua_pop(L, 1);
+  return is_export;
 }
 
 static void synchronize(
