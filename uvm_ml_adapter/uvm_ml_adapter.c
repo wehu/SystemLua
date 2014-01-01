@@ -44,18 +44,27 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  unsigned data = luaL_checknumber(L, 4);
+  int len = luaL_getn(L, 4);
+  uvm_ml_stream_t data = (uvm_ml_stream_t)malloc(len*sizeof(uvm_ml_stream_t));
+  assert(data);
+  int i = 1;
+  for(; i <= len; i++) {
+    lua_pushnumber(L, i);
+    lua_gettable(L, 4); 
+    data[i-1] = lua_tointeger(L, -1);
+  };
   unsigned done = 0;
   unsigned disable = BP(request_put)(
     framework_id,
     id,
     call_id,
-    1, //arg->nblocks,
-    &data, //arg->val,
+    len,
+    data,
     &done,
     &m_time_unit,
     &m_time_value
   );
+  free(data);
   lua_pushnumber(L, disable);
   return 1;
 }
@@ -254,7 +263,14 @@ static int request_put(
   lua_pushnumber(L, connector_id);
   lua_pushnumber(L, call_id);
   lua_pushnumber(L, callback_adapter_id);
-  lua_pushnumber(L, *stream);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
   if (lua_pcall(L, 4, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   return 0;

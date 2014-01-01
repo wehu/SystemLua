@@ -49,7 +49,7 @@ local function create_connector(p)
       end
       calls[call_id] = cb
       --callbacks[callback_id] = cb
-      uvm_sl_ml_request_put(p.id, call_id, callback_id, data)
+      uvm_sl_ml_request_put(p.id, call_id, callback_id, ml_pack(data))
       sl_scheduler:sleep()
     end
   elseif p.typ == "tlm_blocking_get" then
@@ -93,13 +93,16 @@ end
 
 function uvm_sl_ml_notify_end_blocking_callback(call_id, callback_id)
   --callbacks[callback_id](call_id, callback_id)
+  if not calls[call_id] then
+    err("unknown callback id "..call_id)
+  end
   calls[call_id](call_id, callback_id)
 end
 
-function uvm_sl_ml_request_put_callback(id, call_id, callback_id, data)
+function uvm_sl_ml_request_put_callback(id, call_id, callback_id, packet)
   local p = find_port_by_id(id)
   fork(function()
-    p:put(data)
+    p:put(ml_unpack(packet))
     uvm_sl_ml_notify_end_blocking(call_id, callback_id)
   end)
 end
@@ -116,6 +119,6 @@ function uvm_sl_ml_get_requested_callback(id, call_id, callback_id)
   --local p = find_port_by_id(id)
   local data = requests[call_id]
   requests[call_id] = nil
-  return data
+  return data --ml_pack(data)
 end
 
