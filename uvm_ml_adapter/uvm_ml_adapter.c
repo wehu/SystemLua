@@ -49,8 +49,7 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   assert(data);
   int i = 1;
   for(; i <= len; i++) {
-    lua_pushnumber(L, i);
-    lua_gettable(L, 4); 
+    lua_rawgeti(L, 4, i);
     data[i-1] = lua_tointeger(L, -1);
   };
   unsigned done = 0;
@@ -94,14 +93,23 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  int data = 0;
+  unsigned stream_size = luaL_checknumber(L, 4);
+  uvm_ml_stream_t data = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   BP(get_requested)(
     framework_id,
     id,
     call_id,
-    &data
+    data
   );
-  lua_pushnumber(L, data);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(;i <= stream_size; i++) {
+    lua_pushnumber(L, i); 
+    lua_pushnumber(L, data[i-1]);
+    lua_settable(L, top);
+  };
+  free(data);
   return 1;
 }
 
@@ -303,8 +311,13 @@ static unsigned get_requested(
   lua_pushnumber(L, call_id);
   if (lua_pcall(L, 3, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  int data = lua_tonumber(L, -1);
-  *stream = data; 
+  int len = luaL_getn(L, -1);
+  int i = 1;
+  for(; i <= len; i++) {
+    lua_rawgeti(L, -2, i);
+    stream[i-1] = lua_tointeger(L, -1);
+  };
+  lua_pop(L, 1); 
   return 0;
 }
 

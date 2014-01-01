@@ -48,7 +48,18 @@ function ml_unpack(packet)
   if typ == "unsigned" then
     data = packet[2]
   else
-    err("unsupported unpacked data type "..typ)
+    err("unsupported packed data type "..typ)
   end
   return data
+end
+
+function ml_packet_size(typ)
+  sl_checktype(typ, "string")
+  local size = 0
+  if typ == "unsigned" then
+    size = 2
+  else
+    err("unsupported packed data type "..typ)
+  end
+  return size
 end

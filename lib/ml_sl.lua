@@ -53,9 +53,11 @@ local function create_connector(p)
       sl_scheduler:sleep()
     end
   elseif p.typ == "tlm_blocking_get" then
-    function c:get()
+    function c:get(typ)
+      sl_checktype(typ, "string")
       call_id = call_id + 1
       callback_id = callback_id + 1
+      local size = ml_packet_size(typ)
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -67,7 +69,7 @@ local function create_connector(p)
       --callbacks[callback_id] = cb
       uvm_sl_ml_request_get(p.id, call_id, callback_id)
       sl_scheduler:sleep()
-      return uvm_sl_ml_get_requested(p.id, call_id, callback_id)
+      return ml_unpack(uvm_sl_ml_get_requested(p.id, call_id, callback_id, size))
     end
   else
     err("unsupported connector type "..p.typ)
@@ -119,6 +121,6 @@ function uvm_sl_ml_get_requested_callback(id, call_id, callback_id)
   --local p = find_port_by_id(id)
   local data = requests[call_id]
   requests[call_id] = nil
-  return data --ml_pack(data)
+  return ml_pack(data)
 end
 
