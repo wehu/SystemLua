@@ -24,6 +24,8 @@ require "sl_port"
 require "sl_tlm1"
 require "sl_scheduler"
 require "sl_util"
+require "sl_logger"
+require "ml_packer"
 
 local call_id = 0
 local calls = {}
@@ -67,6 +69,8 @@ local function create_connector(p)
       sl_scheduler:sleep()
       return uvm_sl_ml_get_requested(p.id, call_id, callback_id)
     end
+  else
+    err("unsupported connector type "..p.typ)
   end
   return c
 end
@@ -76,11 +80,13 @@ function ml_connect(path1, path2)
   local p2 = sl_port.ports[path2]
   --if p1 and p2 then
   --  return p1:connect(p2)
-  --elseif p1 and not p2 then
-  if p1 then
+  --end
+  if p1 and not p1.is_export then
     p1.peer = create_connector(p1)
   --elseif not p1 and p2 then
-  else
+  end
+  if p2 and not p2.is_export then
+    p2.peer = create_connector(p2)
   end
   return uvm_sl_ml_connect(path1, path2) 
 end

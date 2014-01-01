@@ -135,6 +135,12 @@ static void startup() {
   lua_pushcfunction(L, uvm_sl_ml_get_requested);
   lua_setglobal(L, "uvm_sl_ml_get_requested");
 
+  lua_pushcfunction(L, uvm_sl_ml_get_type_id);
+  lua_setglobal(L, "uvm_sl_ml_get_type_id");
+
+  lua_pushcfunction(L, uvm_sl_ml_get_type_name);
+  lua_setglobal(L, "uvm_sl_ml_get_type_name");
+
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
 #else
