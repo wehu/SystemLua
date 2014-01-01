@@ -87,6 +87,57 @@ function initial(body)
   end)
 end
 
+function fork(body)
+  sl_checktype(body, "function")
+  return initial(body)
+end
+
+function fork_join_all(...)
+  local th = sl_scheduler.current
+  sl_checktype(th, "thread")
+  local e = event()
+  local n = table.getn(arg)
+  e:register(function ()
+    n = n - 1
+    if n == 0 then
+      sl_scheduler:wake(th)
+    end
+  end)
+  for i, v in ipairs(arg) do
+    sl_checktype(v, "function")
+    fork(function (...)
+      v(unpack(arg))
+      e:notify()
+    end)
+  end
+  if n > 0 then
+    sl_scheduler:sleep()
+  end
+end
+
+function fork_join_any(...)
+  local th = sl_scheduler.current
+  sl_checktype(th, "thread")
+  local e = event()
+  local n = 1
+  e:register(function ()
+    n = n - 1
+    if n == 0 then
+      sl_scheduler:wake(th)
+    end
+  end)
+  for i, v in ipairs(arg) do
+    sl_checktype(v, "function")
+    fork(function (...)
+      v(unpack(arg))
+      e:notify()
+    end)
+  end
+  if n > 0 then
+    sl_scheduler:sleep()
+  end
+end
+
 function run(body, delay)
   if body then
     sl_checktype(body, "function")

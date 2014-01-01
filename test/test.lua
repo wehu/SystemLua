@@ -31,5 +31,28 @@ run(function()
     info(pipe("p"):size())
     info(pipe("p"):read())
   end)
+
+  initial(function ()
+  fork_join_all(function ()
+    wait(1)
+    info("a1")
+  end,
+  function()
+    info("b1")
+  end)
+  info("c1")
+  end)
+
+  initial(function ()
+  fork_join_any(function ()
+    wait(1)
+    info("a2")
+  end,
+  function()
+    info("b2")
+  end)
+  info("c2")
+  end)
+
 end, 10)
 

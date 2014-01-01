@@ -112,6 +112,9 @@ function sl_simtime:run(delta, max)
       break
     end
   end
+  if delay then
+    sl_simtime.timeline = ct + delay
+  end
 end
 
 function sl_simtime:stop()
