@@ -25,9 +25,9 @@ require "sl_util"
 
 function blocking_put_port(name)
   local p = port(name, "tlm_blocking_put")
-  function p:put(packet)
+  function p:put(data)
     self:check_peer()
-    self.peer:put(packet)
+    self.peer:put(data)
   end
   function p:connect(ap)
     self:check_connection_type(ap, "tlm_blocking_put")
@@ -39,14 +39,43 @@ end
 function blocking_put_port_imp(name, put_imp)
   local p = port(name, "tlm_blocking_put")
   p.is_export = true
-  function p:put(packet)
+  function p:put(data)
     if put_imp then
       sl_checktype(put_imp, "function")
-      put_imp(self, packet)
+      put_imp(self, data)
     end
   end
   function p:connect(ap)
     self:check_connection_type(ap, "tlm_blocking_put")
+    ap.peer = self
+  end
+  return p
+end
+
+function blocking_get_port(name)
+  local p = port(name, "tlm_blocking_get")
+  function p:get()
+    self:check_peer()
+    return self.peer:get()
+  end
+  function p:connect(ap)
+    self:check_connection_type(ap, "tlm_blocking_get")
+    self.peer = ap
+  end
+  return p
+end
+
+function blocking_get_port_imp(name, get_imp)
+  local p = port(name, "tlm_blocking_get")
+  p.is_export = true
+  function p:get()
+    if get_imp then
+      sl_checktype(get_imp, "function")
+      return get_imp(self)
+    end
+  end
+  function p:connect(ap)
+    self:check_connection_type(ap, "tlm_blocking_get")
     ap.peer = self
   end
   return p
