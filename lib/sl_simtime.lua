@@ -113,7 +113,7 @@ function sl_simtime:run(delta, max)
     end
   end
   if delay then
-    sl_simtime.timeline = ct + delay
+    sl_simtime.timeline = ct + (((delay < max) and delay) or max)
   end
 end
 

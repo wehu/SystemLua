@@ -21,8 +21,6 @@ static unsigned framework_id = -1;
 static uvm_ml_time_unit m_time_unit = TIME_UNIT_UNDEFINED;
 static double           m_time_value = -1;
 
-static unsigned fake_call_id = 0;
-
 // provided apis
 static int uvm_sl_ml_connect(lua_State * L) {
   assert (bpProvidedAPI != NULL);
@@ -30,14 +28,24 @@ static int uvm_sl_ml_connect(lua_State * L) {
   const char * export_name = luaL_checkstring(L, 2); 
   unsigned res = BP(connect)(framework_id, port_name, export_name);
   lua_pushnumber(L, res);
+  return 1;
+}
+
+static int uvm_sl_ml_notify_end_blocking(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  unsigned call_id = luaL_checknumber(L, 1);
+  unsigned callback_adapter_id = luaL_checknumber(L, 2);
+  BP(notify_end_blocking)(framework_id, callback_adapter_id, call_id, m_time_unit, m_time_value);
   return 0;
 }
+
 
 static int uvm_sl_ml_request_put(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
-  unsigned data = luaL_checknumber(L, 2);
-  unsigned call_id = fake_call_id++;
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  unsigned data = luaL_checknumber(L, 4);
   unsigned done = 0;
   unsigned disable = BP(request_put)(
     framework_id,
@@ -50,9 +58,44 @@ static int uvm_sl_ml_request_put(lua_State * L) {
     &m_time_value
   );
   lua_pushnumber(L, disable);
-  return 0;
+  return 1;
 }
 
+static int uvm_sl_ml_request_get(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  unsigned done = 0;
+  int disable = BP(request_get)(
+    framework_id,
+    id,
+    call_id,
+    0,
+    0,
+    &done,
+    &m_time_unit,
+    &m_time_value
+  );
+  lua_pushnumber(L, disable);
+  return 1;
+}
+
+static int uvm_sl_ml_get_requested(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  int data = 0;
+  BP(get_requested)(
+    framework_id,
+    id,
+    call_id,
+    &data
+  );
+  lua_pushnumber(L, data);
+  return 1;
+}
 // required apis
 
 static void set_debug_mode(int mode) {
@@ -66,8 +109,17 @@ static void startup() {
   lua_pushcfunction(L, uvm_sl_ml_connect);
   lua_setglobal(L, "uvm_sl_ml_connect");
 
+  lua_pushcfunction(L, uvm_sl_ml_notify_end_blocking);
+  lua_setglobal(L, "uvm_sl_ml_notify_end_blocking");
+
   lua_pushcfunction(L, uvm_sl_ml_request_put);
   lua_setglobal(L, "uvm_sl_ml_request_put");
+
+  lua_pushcfunction(L, uvm_sl_ml_request_get);
+  lua_setglobal(L, "uvm_sl_ml_request_get");
+
+  lua_pushcfunction(L, uvm_sl_ml_get_requested);
+  lua_setglobal(L, "uvm_sl_ml_get_requested");
 
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
@@ -180,10 +232,56 @@ static int request_put(
   ) {
   lua_getglobal(L, "uvm_sl_ml_request_put_callback");
   lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, callback_adapter_id);
   lua_pushnumber(L, *stream);
-  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+  if (lua_pcall(L, 4, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   return 0;
+}
+
+static int request_get(
+  unsigned connector_id,
+  unsigned call_id,
+  unsigned callback_adapter_id,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_request_get_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, callback_adapter_id);
+  if (lua_pcall(L, 3, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1)); 
+  return 0;
+}
+
+static unsigned get_requested(
+    unsigned connector_id,
+    unsigned call_id,
+    uvm_ml_stream_t stream
+) {
+  lua_getglobal(L, "uvm_sl_ml_get_requested_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, call_id);
+  if (lua_pcall(L, 3, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int data = lua_tonumber(L, -1);
+  *stream = data; 
+  return 0;
+}
+
+static void notify_end_blocking(
+  unsigned call_id,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_notify_end_blocking_callback");
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, call_id); 
+  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1)); 
 }
 
 static void synchronize(
@@ -237,8 +335,8 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   //required_api->try_put_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_put;
   //required_api->can_put_ptr = uvm_ml_tlm_rec::can_put;
   required_api->put_uvm_ml_stream_request_ptr = request_put;
-  //required_api->get_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_get;
-  //required_api->get_requested_uvm_ml_stream_ptr = uvm_ml_tlm_rec::get_requested;
+  required_api->get_uvm_ml_stream_request_ptr = request_get;
+  required_api->get_requested_uvm_ml_stream_ptr = get_requested;
   //required_api->try_get_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_get;
   //required_api->can_get_ptr = uvm_ml_tlm_rec::can_get;
   //required_api->peek_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_peek;
@@ -249,7 +347,7 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   //required_api->transport_response_uvm_ml_stream_ptr = uvm_ml_tlm_rec::transport_response;
   //required_api->nb_transport_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_transport;
   //required_api->write_uvm_ml_stream_ptr = uvm_ml_tlm_rec::write;
-  //required_api->notify_end_blocking_ptr = uvm_ml_tlm_rec::notify_end_blocking;
+  required_api->notify_end_blocking_ptr = notify_end_blocking;
   //required_api->tlm2_b_transport_request_ptr = uvm_ml_tlm_rec::tlm2_b_transport_request;
   //required_api->tlm2_b_transport_response_ptr = uvm_ml_tlm_rec::tlm2_b_transport_response;
   //required_api->tlm2_nb_transport_fw_ptr =  uvm_ml_tlm_rec::tlm2_nb_transport_fw;

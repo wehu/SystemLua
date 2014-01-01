@@ -68,6 +68,7 @@ end
 function blocking_get_port_imp(name, get_imp)
   local p = port(name, "tlm_blocking_get")
   p.is_export = true
+  p.requests = {}
   function p:get()
     if get_imp then
       sl_checktype(get_imp, "function")
