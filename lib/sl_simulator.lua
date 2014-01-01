@@ -25,9 +25,10 @@ require "sl_event"
 require "sl_simtime"
 require "sl_scheduler"
 
-sl_simulator = {stopped=true}
+sl_simulator = {stopped=true, started=false}
 
 function sl_simulator:run(body, delay)
+  self.started = true
   self.stopped = false
   if body then
      sl_checktype(body, "function")

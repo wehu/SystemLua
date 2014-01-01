@@ -39,7 +39,6 @@ static int uvm_sl_ml_notify_end_blocking(lua_State * L) {
   return 0;
 }
 
-
 static int uvm_sl_ml_request_put(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
@@ -96,6 +95,21 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   lua_pushnumber(L, data);
   return 1;
 }
+
+static int uvm_sl_ml_get_type_id(lua_State * L) {
+  const char * name = luaL_checkstring(L, 1);
+  unsigned id = BP(get_type_id_from_name)(framework_id, name);
+  lua_pushnumber(L, id);
+  return 1;
+}
+
+static int uvm_sl_ml_get_type_name(lua_State * L) {
+  unsigned id = luaL_checknumber(L, 1);
+  char * name = BP(get_type_name_from_id)(framework_id, id);
+  lua_pushstring(L, name);
+  return 1;
+}
+
 // required apis
 
 static void set_debug_mode(int mode) {

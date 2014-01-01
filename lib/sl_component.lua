@@ -88,6 +88,9 @@ function sl_component:notify_phase(name)
     v:notify_phase(name)
   end
   if self[name] and not self.phases_done[name] and self.static_phases[name] then
+    if sl_simulator.started then
+      err("attempt to notify static phase "..name.." after simulation is started")
+    end
     self.phases_done[name] = true
     self[name](self)
   elseif self.runtime_phases[name] then
