@@ -49,7 +49,7 @@ function ml_set_packet_size(typ, size)
   if not packers[typ] then
     packers[typ] = {}
   end
-  packers[typ].sl_size = size
+  packers[typ].sl_size = size + 2
 end
 
 function ml_pack(data)
@@ -103,13 +103,14 @@ end
 ml_register_packer("number", function(data)
   local packet = {}
   local id = uvm_sl_ml_get_type_id("number")
+  table.insert(packet, 1)
   table.insert(packet, id)
   table.insert(packet, data)
   return packet
 end)
 
 ml_register_unpacker("number", function(packet)
-  return packet[2]
+  return packet[3]
 end)
 
-ml_set_packet_size("number", 2)
+ml_set_packet_size("number", 1)
