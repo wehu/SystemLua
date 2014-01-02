@@ -54,12 +54,19 @@ end
 
 function ml_pack(data)
   local typ = type(data)
-  local packet = nil
+  local packet = {}
   if typ == "table" and data.typ then
     typ = data.typ
   end
   if packers[typ] and packers[typ].sl_pack then
-    packet = packers[typ].sl_pack(data)
+    local id = uvm_sl_ml_get_type_id(typ)
+    if data == nil then
+      table.insert(packet, 0)
+    else
+      table.insert(packet, 1)
+    end
+    table.insert(packet, id)
+    packers[typ].sl_pack(packet, data)
     --id = uvm_sl_ml_get_type_id("unsigned")
     --table.insert(packet, id)
     --table.insert(packet, data)
@@ -70,7 +77,10 @@ function ml_pack(data)
 end
 
 function ml_unpack(packet)
-  local id =  packet[1]
+  if packet[1] == 0 then
+    return nil
+  end
+  local id =  packet[2]
   local typ = uvm_sl_ml_get_type_name(id)
   local data = nil
   if packers[typ] and packers[typ].sl_unpack then
@@ -100,11 +110,7 @@ function uvm_sl_ml_check_type_size(id, size)
   end
 end
 
-ml_register_packer("number", function(data)
-  local packet = {}
-  local id = uvm_sl_ml_get_type_id("number")
-  table.insert(packet, 1)
-  table.insert(packet, id)
+ml_register_packer("number", function(packet, data)
   table.insert(packet, data)
   return packet
 end)
@@ -114,3 +120,4 @@ ml_register_unpacker("number", function(packet)
 end)
 
 ml_set_packet_size("number", 1)
+ml_set_packet_size("nil", 1)
