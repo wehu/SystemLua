@@ -57,7 +57,7 @@ function ml_packet_size(typ)
   sl_checktype(typ, "string")
   local size = 0
   if typ == "unsigned" then
-    size = 2
+    size = 2 
   else
     err("unsupported packed data type "..typ)
   end
