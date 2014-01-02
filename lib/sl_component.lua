@@ -40,7 +40,7 @@ function sl_component:new(name, body)
   if body then
     sl_checktype(body, "function")
   end
-  local o = {name=name, typ="component", path=name,
+  local o = {name=name, type="component", path=name,
     parent=sl_current_component,
     proxy=false,
     foreign=false,

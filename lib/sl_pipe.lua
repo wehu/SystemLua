@@ -38,7 +38,7 @@ function sl_pipe:new(name)
        id=sl_pipe.ids,
        parent=sl_current_component,
        name=name,
-       typ="pipe"}
+       type="pipe"}
   sl_pipe.ids = sl_pipe.ids + 1
   if name then
     if sl_current_component then

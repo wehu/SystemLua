@@ -34,7 +34,7 @@ function sl_socket:new(name)
     err("attempt to create a socket \'"..name.."\' whose name includes \".\"")
   end
   local o = {name=name,
-    typ="socket",
+    type="socket",
     path=name,
     peer=nil,
     id=sl_socket.ids,

@@ -272,7 +272,7 @@ static const char* get_connector_intf_name(unsigned connector_id) {
   lua_pushnumber(L, connector_id);
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  lua_getfield(L, -1, "typ");
+  lua_getfield(L, -1, "type");
   const char * intf_name = lua_tostring(L, -1);
   lua_pop(L, 1);
   return intf_name;

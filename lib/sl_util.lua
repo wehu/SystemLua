@@ -22,8 +22,8 @@ THE SOFTWARE.
 
 function sl_checktype(a, t)
   local at = type(a)
-  if at == "table" and a.typ then
-    at = a.typ
+  if at == "table" and a.type then
+    at = a.type
   end
   if at ~= t then
     err("expect type "..t..", but got type "..at)

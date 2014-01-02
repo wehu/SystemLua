@@ -36,7 +36,7 @@ local requests = {}
 
 local function create_connector(p)
   local c = {}
-  if p.typ == "tlm_blocking_put" then
+  if p.type == "tlm_blocking_put" then
     function c:put(data)
       call_id = call_id + 1
       callback_id = callback_id + 1
@@ -52,7 +52,7 @@ local function create_connector(p)
       uvm_sl_ml_request_put(p.id, call_id, callback_id, ml_pack(data))
       sl_scheduler:sleep()
     end
-  elseif p.typ == "tlm_blocking_get" then
+  elseif p.type == "tlm_blocking_get" then
     function c:get(typ)
       sl_checktype(typ, "string")
       call_id = call_id + 1

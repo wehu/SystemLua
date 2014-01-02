@@ -51,7 +51,7 @@ end
 
 function sl_simtime:new(delay)
   sl_checktype(delay, "number")
-  local o = {callbacks={}, typ="simtime"}
+  local o = {callbacks={}, type="simtime"}
   self.size = self.size + 1
   setmetatable(o.callbacks, {__mode = "k"})
   setmetatable(o, {__index = self})

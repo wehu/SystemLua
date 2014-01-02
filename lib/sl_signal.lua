@@ -47,7 +47,7 @@ function sl_signal:new(name, data)
        name=name,
        parent=sl_current_component,
        id=sl_signal.ids,
-       typ="signal"}
+       type="signal"}
   sl_signal.ids = sl_signal.ids + 1
   if name then
     if sl_current_component then

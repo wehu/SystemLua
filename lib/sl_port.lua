@@ -40,7 +40,7 @@ function sl_port:new(name, typ)
     err("attempt to create a port \'"..name.."\' whose name includes \".\"")
   end
   local o = {name=name,
-    typ=typ,
+    type=typ,
     path=name,
     peer=nil,
     is_export=false,
@@ -67,8 +67,8 @@ function sl_port:check_peer(typ)
 end
 
 function sl_port:check_connection_type(p, typ)
-  if (typ and p.typ ~= typ) or (self.typ ~= p.typ) then
-    err("attempt to connect port "..self.path..":"..self.typ.." with different type of port "..p.path..":"..p.typ)
+  if (typ and p.type ~= typ) or (self.type ~= p.type) then
+    err("attempt to connect port "..self.path..":"..self.type.." with different type of port "..p.path..":"..p.type)
   end
   if self.is_export == p.is_export then
     err("attempt to connect port "..self.path.." with "..p.path..", they are both export:"..self.is_export)

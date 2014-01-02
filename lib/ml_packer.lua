@@ -55,8 +55,8 @@ end
 function ml_pack(data)
   local typ = type(data)
   local packet = {}
-  if typ == "table" and data.typ then
-    typ = data.typ
+  if typ == "table" and data.type then
+    typ = data.type
   end
   if packers[typ] and packers[typ].sl_pack then
     local id = uvm_sl_ml_get_type_id(typ)

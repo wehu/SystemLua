@@ -32,7 +32,7 @@ function sl_event:new(name)
   if name and string.match(name, "%.") then
     err("attempt to create an event \'"..name.."\' whose name includes \".\"")
   end
-  local o = {callbacks={}, name=name, typ="event", id=sl_event.ids, parent=sl_current_component}
+  local o = {callbacks={}, name=name, type="event", id=sl_event.ids, parent=sl_current_component}
   sl_event.ids = sl_event.ids + 1
   if name then
     if sl_current_component then
