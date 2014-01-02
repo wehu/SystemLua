@@ -77,17 +77,26 @@ local function create_connector(p)
   return c
 end
 
+function ml_register_port(path)
+  sl_checktype(path, "string")
+  local p = sl_port.ports[path]
+  if p and not p.is_export then
+    p.peer = create_connector(p)
+  end
+end
+
 function ml_connect(path1, path2)
+  sl_checktype(path1, "string")
+  sl_checktype(path2, "string")
   local p1 = sl_port.ports[path1]
   local p2 = sl_port.ports[path2]
-  --if p1 and p2 then
-  --  return p1:connect(p2)
-  --end
-  if p1 and not p1.is_export then
-    p1.peer = create_connector(p1)
-  --elseif not p1 and p2 then
+  if p1 and p2 then
+    return p1:connect(p2)
   end
-  if p2 and not p2.is_export then
+  if p1 and not p1.peer then
+    p1.peer = create_connector(p1)
+  end
+  if p2 and not p2.peer then
     p2.peer = create_connector(p2)
   end
   return uvm_sl_ml_connect(path1, path2) 
