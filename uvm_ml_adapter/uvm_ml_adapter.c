@@ -316,6 +316,13 @@ static unsigned get_requested(
   for(; i <= len; i++) {
     lua_rawgeti(L, -2, i);
     stream[i-1] = lua_tointeger(L, -1);
+    if(i == 1) {
+      lua_getglobal(L, "uvm_sl_ml_check_type_size");
+      lua_pushnumber(L, stream[i-1]);
+      lua_pushnumber(L, len);
+      if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+        error(L, "%s", lua_tostring(L, -1));
+    };
   };
   lua_pop(L, 1); 
   return 0;

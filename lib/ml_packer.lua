@@ -56,10 +56,18 @@ end
 function ml_packet_size(typ)
   sl_checktype(typ, "string")
   local size = 0
-  if typ == "number" then
+  if typ == "unsigned" then
     size = 2
   else
     err("unsupported packed data type "..typ)
   end
   return size
+end
+
+function uvm_sl_ml_check_type_size(id, size)
+  local typ = uvm_sl_ml_get_type_name(id)
+  local packet_size = ml_packet_size(typ)
+  if packet_size ~= size then
+    err("the packet size of type "..typ.." expect "..packet_size.." but got "..size)
+  end
 end
