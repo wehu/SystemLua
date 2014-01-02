@@ -23,18 +23,46 @@ THE SOFTWARE.
 require "sl_util"
 require "sl_logger"
 
+local packers = {}
+
+function ml_register_packer(typ, body)
+  sl_checktype(typ, "string")
+  sl_checktype(body, "function")
+  if not packers[typ] then
+    packers[typ] = {}
+  end
+  packers[typ].sl_pack = body
+end
+
+function ml_register_unpacker(typ, body)
+  sl_checktype(typ, "string")
+  sl_checktype(body, "function")
+  if not packers[typ] then
+    packers[typ] = {}
+  end
+  packers[typ].sl_unpack = body
+end
+
+function ml_set_packet_size(typ, size)
+  sl_checktype(typ, "string")
+  sl_checktype(size, "number")
+  if not packers[typ] then
+    packers[typ] = {}
+  end
+  packers[typ].sl_size = size
+end
+
 function ml_pack(data)
   local typ = type(data)
-  local packet = {}
-  local id = 0
+  local packet = nil
   if typ == "table" and data.typ then
     typ = data.typ
   end
-  local id = uvm_sl_ml_get_type_id(typ)
-  if typ == "number" then
-    id = uvm_sl_ml_get_type_id("unsigned")
-    table.insert(packet, id)
-    table.insert(packet, data)
+  if packers[typ] and packers[typ].sl_pack then
+    packet = packers[typ].sl_pack(data)
+    --id = uvm_sl_ml_get_type_id("unsigned")
+    --table.insert(packet, id)
+    --table.insert(packet, data)
   else
     err("unsupported packed data type "..typ)
   end
@@ -45,8 +73,8 @@ function ml_unpack(packet)
   local id =  packet[1]
   local typ = uvm_sl_ml_get_type_name(id)
   local data = nil
-  if typ == "unsigned" then
-    data = packet[2]
+  if packers[typ] and packers[typ].sl_unpack then
+    data = packers[typ].sl_unpack(packet)
   else
     err("unsupported packed data type "..typ)
   end
@@ -56,8 +84,8 @@ end
 function ml_packet_size(typ)
   sl_checktype(typ, "string")
   local size = 0
-  if typ == "unsigned" then
-    size = 2 
+  if packers[typ] and packers[typ].sl_size then
+    size = packers[typ].sl_size
   else
     err("unsupported packed data type "..typ)
   end
@@ -71,3 +99,17 @@ function uvm_sl_ml_check_type_size(id, size)
     err("the packet size of type "..typ.." expect "..packet_size.." but got "..size)
   end
 end
+
+ml_register_packer("number", function(data)
+  local packet = {}
+  local id = uvm_sl_ml_get_type_id("number")
+  table.insert(packet, id)
+  table.insert(packet, data)
+  return packet
+end)
+
+ml_register_unpacker("number", function(packet)
+  return packet[2]
+end)
+
+ml_set_packet_size("number", 2)

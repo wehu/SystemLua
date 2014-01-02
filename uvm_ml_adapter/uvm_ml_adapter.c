@@ -48,10 +48,13 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   assert(stream);
   int i = 1;
+  lua_pushnil(L);
   for(; i <= stream_size; i++) {
-    lua_rawgeti(L, 4, i);
+    lua_next(L, 4);
     stream[i-1] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
   };
+  lua_pop(L, 1);
   unsigned done = 0;
   unsigned disable = BP(request_put)(
     framework_id,
@@ -314,9 +317,11 @@ static unsigned get_requested(
     error(L, "%s", lua_tostring(L, -1));
   int len = luaL_getn(L, -1);
   int i = 1;
+  lua_pushnil(L);
   for(; i <= len; i++) {
-    lua_rawgeti(L, -2, i);
+    lua_next(L, -2);
     stream[i-1] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
     if(i == 1) {
       lua_getglobal(L, "uvm_sl_ml_check_type_size");
       lua_pushnumber(L, stream[i-1]);
@@ -325,7 +330,7 @@ static unsigned get_requested(
         error(L, "%s", lua_tostring(L, -1));
     };
   };
-  lua_pop(L, 1); 
+  lua_pop(L, 2);
   return 0;
 }
 
