@@ -23,7 +23,7 @@ THE SOFTWARE.
 require "sl_simtime"
 
 function sl_logger(t, ...)
-  print("[System-Lua "..sl_simtime.timeline.." "..t.."]:", unpack(arg))
+  print("[SL "..sl_simtime.timeline.." "..t.."]:", unpack(arg))
   if t == "E" then
     error(unpack(arg))
   end

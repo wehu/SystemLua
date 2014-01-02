@@ -8,6 +8,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#define PACK_MAX_SIZE 4096/32
+
 static lua_State *L = NULL;
 
 static int lua_stack_base = 0;
@@ -45,7 +47,7 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   int stream_size = luaL_getn(L, 4);
-  unsigned stream[stream_size];
+  unsigned stream[PACK_MAX_SIZE];
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
@@ -100,7 +102,7 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   unsigned stream_size = luaL_checknumber(L, 4);
   //unsigned stream[stream_size+100]; 
   // FIXME: have to use max size of stream, or will result into memory problem
-  unsigned stream[4096/32];
+  unsigned stream[PACK_MAX_SIZE];
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   unsigned size = BP(get_requested)(
@@ -109,6 +111,7 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
     call_id,
     stream
   );
+  assert(stream_size == size);
   lua_newtable(L);
   int top = lua_gettop(L);
   int i = 1;
