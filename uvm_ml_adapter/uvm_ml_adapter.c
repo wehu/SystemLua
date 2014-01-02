@@ -45,8 +45,9 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   int stream_size = luaL_getn(L, 4);
-  uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
-  assert(stream);
+  unsigned stream[stream_size];
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
@@ -66,7 +67,7 @@ static int uvm_sl_ml_request_put(lua_State * L) {
     &m_time_unit,
     &m_time_value
   );
-  free(stream);
+  //free(stream);
   lua_pushnumber(L, disable);
   return 1;
 }
@@ -97,8 +98,11 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   unsigned stream_size = luaL_checknumber(L, 4);
-  uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
-  assert(stream);
+  //unsigned stream[stream_size+100]; 
+  // FIXME: have to use max size of stream, or will result into memory problem
+  unsigned stream[4096/32];
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
   unsigned size = BP(get_requested)(
     framework_id,
     id,
@@ -113,7 +117,7 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
     lua_pushnumber(L, stream[i-1]);
     lua_settable(L, top);
   };
-  free(stream);
+  //free(stream);
   return 1;
 }
 
