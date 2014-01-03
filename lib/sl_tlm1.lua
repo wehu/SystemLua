@@ -23,7 +23,7 @@ THE SOFTWARE.
 require "sl_port"
 require "sl_util"
 
-local function generate_tlm1_port(pre, typ)
+local function tlm1_port(pre, typ)
   local pn = pre.."_"..typ.."_port"
   local pt = "tlm_"..pre.."_"..typ
   local can_typ = "can_"..typ
@@ -50,7 +50,7 @@ local function generate_tlm1_port(pre, typ)
      end
      return p
    end
-  local pni = pre.."_"..typ.."_port_imp"
+  local pni = pre.."_"..typ.."_imp"
   _G[pni] = function(name, imp, can_imp)
     local p = port(name, pt)
     p.is_export = true
@@ -74,11 +74,11 @@ local function generate_tlm1_port(pre, typ)
   end
 end
 
-generate_tlm1_port("blocking", "put")
-generate_tlm1_port("blocking", "get")
-generate_tlm1_port("blocking", "peek")
+tlm1_port("blocking", "put")
+tlm1_port("blocking", "get")
+tlm1_port("blocking", "peek")
 
-generate_tlm1_port("nonblocking", "put")
-generate_tlm1_port("nonblocking", "get")
-generate_tlm1_port("nonblocking", "peek")
+tlm1_port("nonblocking", "put")
+tlm1_port("nonblocking", "get")
+tlm1_port("nonblocking", "peek")
 

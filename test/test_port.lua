@@ -6,10 +6,10 @@ component("foo", function ()
 end)
 
 component("foo1", function()
-  blocking_put_port_imp("bpi", function(self, packet)
+  blocking_put_imp("bpi", function(self, packet)
     info(packet)
   end)
-  blocking_get_port_imp("bgi", function(self)
+  blocking_get_imp("bgi", function(self)
     return "get"
   end)
 end)
