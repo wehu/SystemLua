@@ -57,7 +57,7 @@ local function create_connector(p)
     end
   elseif p.type == "tlm_nonblocking_put" then
     function c:try_put(data)
-      uvm_sl_ml_nb_put(p.id, ml_pack(data))
+      return uvm_sl_ml_nb_put(p.id, ml_pack(data))
     end
     function c:can_put()
       return uvm_sl_ml_can_put(p.id)
@@ -89,8 +89,8 @@ local function create_connector(p)
     function c:try_get(typ)
       if typ then sl_checktype(typ, "string") end
       local size = 0
-      if typ then ml_packet_size(typ) end 
-      uvm_sl_ml_nb_get(p.id, size)
+      if typ then size = ml_packet_size(typ) end 
+      return ml_unpack(uvm_sl_ml_nb_get(p.id, size))
     end
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
@@ -114,9 +114,9 @@ function ml_connect(path1, path2)
   sl_checktype(path2, "string")
   local p1 = sl_port.ports[path1]
   local p2 = sl_port.ports[path2]
-  if p1 and p2 then
-    return p1:connect(p2)
-  end
+  --if p1 and p2 then
+  --  return p1:connect(p2)
+  --end
   if p1 and not p1.peer then
     p1.peer = create_connector(p1)
   end
@@ -174,6 +174,6 @@ end
 
 function uvm_sl_ml_nb_get_callback(id)
   local p = find_port_by_id(id)
-  return p:try_get()
+  return ml_pack(p:try_get())
 end
 

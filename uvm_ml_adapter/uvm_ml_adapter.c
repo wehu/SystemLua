@@ -449,7 +449,7 @@ static int can_put(
   lua_pushnumber(L, connector_id);
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  int res = lua_tonumber(L, -1);
+  int res = lua_toboolean(L, -1);
   return res;
 }
 
@@ -472,7 +472,7 @@ static int nb_put(
   };
   if (lua_pcall(L, 2, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  int res = lua_tonumber(L, -1);
+  int res = lua_toboolean(L, -1);
   return res;
 }
 
@@ -531,7 +531,7 @@ static int can_get(
   lua_pushnumber(L, connector_id);
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  int res = lua_tonumber(L, -1);
+  int res = lua_toboolean(L, -1);
   return res;
 }
 
