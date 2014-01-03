@@ -160,6 +160,31 @@ static int uvm_sl_ml_get_type_name(lua_State * L) {
   return 1;
 }
 
+static int uvm_sl_ml_create_component_proxy(lua_State * L) {
+  const char * frwind = luaL_checkstring(L, 1);
+  const char * klass = luaL_checkstring(L, 2);
+  const char * name = luaL_checkstring(L, 3);
+  const char * parent_name = luaL_checkstring(L, 4);
+  unsigned parent_id = luaL_checknumber(L, 5);
+  unsigned child_junction_node_id = BP(create_child_junction_node)(
+                                       framework_id,
+                                       frwind,
+                                       klass,
+                                       name,
+                                       parent_name,
+                                       parent_id);
+  lua_pushnumber(L, child_junction_node_id);
+  return 1;
+}
+
+static int uvm_sl_ml_notify_tree_phase(lua_State * L) {
+  const char * frwind = luaL_checkstring(L, 1);
+  unsigned child_id = luaL_checknumber(L, 2);
+  const char * phase = luaL_checkstring(L, 3);
+  int res = BP(notify_tree_phase)(framework_id, frwind, child_id, "common", phase);
+  return 0;
+}
+
 // required apis
 
 static void set_debug_mode(int mode) {
@@ -190,6 +215,12 @@ static void startup() {
 
   lua_pushcfunction(L, uvm_sl_ml_get_type_name);
   lua_setglobal(L, "uvm_sl_ml_get_type_name");
+
+  lua_pushcfunction(L, uvm_sl_ml_create_component_proxy);
+  lua_setglobal(L, "uvm_sl_ml_create_component_proxy");
+
+  lua_pushcfunction(L, uvm_sl_ml_notify_tree_phase);
+  lua_setglobal(L, "uvm_sl_ml_notify_tree_phase");
 
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
@@ -396,7 +427,7 @@ static int create_child_junction_node(
     int          parent_framework_id,
     int          parent_junction_node_id
   ) {
-  lua_getglobal(L, "component_proxy");
+  lua_getglobal(L, "uvm_sl_ml_create_component");
   lua_getglobal(L, component_type_name);
   lua_pushstring(L, instance_name);
   lua_pushstring(L, parent_full_name);

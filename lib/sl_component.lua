@@ -42,7 +42,7 @@ function sl_component:new(name, body)
   end
   local o = {name=name, type="component", path=name,
     parent=sl_current_component,
-    proxy=false,
+    virtual=false,
     foreign=false,
     children={},
     static_phases={
@@ -99,9 +99,9 @@ end
 
 function sl_component:notify_runtime_phase(name)
   sl_checktype(name, "string")
-  --for i, v in ipairs(self.children) do
-  --  v:notify_runtime_phase(name)
-  --end
+  for i, v in ipairs(self.children) do
+    v:notify_runtime_phase(name)
+  end
   if self[name] and not self.phases_done[name] and self.runtime_phases[name] then
     self.phases_done[name] = true
     local o = self
@@ -133,7 +133,7 @@ end
 function notify_phase(name)
   sl_checktype(name, "string")
   for i, v in ipairs(sl_top_components) do
-    if name ~= "proxy" then
+    if not v.virtual then
       v:notify_phase(name)
     end
   end
@@ -141,46 +141,46 @@ end
 
 function notify_runtime_phase(name)
   sl_checktype(name, "string")
-  for k, v in pairs(sl_component.components) do
-    if v.name ~= "proxy" then
+  for k, v in pairs(sl_top_components) do
+    if not v.virtual then
       v:notify_runtime_phase(name)
     end
   end
 end
 
-local comp_proxy = component("proxy")
-comp_proxy.proxy = true 
+local virtual_component = component("virtual")
+virtual_component.virtual = true 
 
-function component_proxy(class, name, parent_full_path, parent_fwid, parent_id)
+function uvm_sl_ml_create_component(class, name, parent_full_path, parent_fwid, parent_id)
   local saved_parent = sl_current_component
-  sl_current_component = comp_proxy
-  comp_proxy.path = parent_full_path
-  local cp = nil
+  sl_current_component = virtual_component
+  virtual_component.path = parent_full_path
+  local c = nil
   local _, e = pcall(function ()
-    cp = _G[class](name)
+    c = _G[class](name)
   end)
-  cp.proxy = true
-  cp.parent_full_path = parent_full_path
-  cp.parent_fwid = parent_fwid
-  cp.parent_id = parent_id
+  c.parent_full_path = parent_full_path
+  c.parent_fwid = parent_fwid
+  c.parent_id = parent_id
   if parent_full_path == "" then
-    table.insert(sl_top_components, cp)
+    table.insert(sl_top_components, c)
   end
-  comp_proxy.path = "proxy"
+  virtual_component.path = "virtual"
   sl_current_component = saved_parent
   if e then
     error(e)
   end
-  return cp
+  return p
 end
 
-function foreign_component(target_fwind, class, name)
-  local fc = component(name)
-  fc.foreign = true
-  fc.target_fwind = target_fwind
-  fc.class = class
+function component_proxy(target_fwind, class, name)
+  local cp = component(name)
+  cp.foreign = true
+  cp.target_fwind = target_fwind
+  cp.class = class
+  cp.proxy_id = uvm_sl_ml_create_component_proxy(target_fwind, class, name, cp.name, cp.id)
   function fc:notify_phase(name)
-    uvm_sl_ml_notify_phase(self.target_fwind, self.parent.id, name)
+    uvm_sl_ml_notify_tree_phase(self.target_fwind, self.proxy_id, name)
   end
   return fc
 end
