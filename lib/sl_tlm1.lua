@@ -27,14 +27,15 @@ local function generate_tlm1_port(pre, typ)
   local pn = pre.."_"..typ.."_port"
   local pt = "tlm_"..pre.."_"..typ
   local can_typ = "can_"..typ
+  local bnb_typ = (pre == "nonblocking") and "try_"..typ or typ
   _G[pn] = function(name)
      local p = port(name, pt)
-     p[typ] = function(self, ...)
+     p[bnb_typ] = function(self, ...)
        self:check_peer()
-       if not self.peer[typ] then
-         err("cannot find \'"..typ.."\' function in peer")
+       if not self.peer[bnb_typ] then
+         err("cannot find \'"..bnb_typ.."\' function in peer")
        end
-       return self.peer[typ](self.peer, unpack(arg))
+       return self.peer[bnb_typ](self.peer, unpack(arg))
      end
      p[can_typ] = function(self, ...)
        self:check_peer()
@@ -53,7 +54,7 @@ local function generate_tlm1_port(pre, typ)
   _G[pni] = function(name, imp, can_imp)
     local p = port(name, pt)
     p.is_export = true
-    p[typ] = function(self, ...)
+    p[bnb_typ] = function(self, ...)
       if imp then
         sl_checktype(imp, "function")
         return imp(self, unpack(arg))

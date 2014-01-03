@@ -52,12 +52,23 @@ local function create_connector(p)
       uvm_sl_ml_request_put(p.id, call_id, callback_id, ml_pack(data))
       sl_scheduler:sleep()
     end
+    function c:can_put()
+      return uvm_sl_ml_can_put(p.id)
+    end
+  elseif p.type == "tlm_nonblocking_put" then
+    function c:try_put(data)
+      uvm_sl_ml_nb_put(p.id, ml_pack(data))
+    end
+    function c:can_put()
+      return uvm_sl_ml_can_put(p.id)
+    end
   elseif p.type == "tlm_blocking_get" then
     function c:get(typ)
-      sl_checktype(typ, "string")
+      if typ then sl_checktype(typ, "string") end
       call_id = call_id + 1
       callback_id = callback_id + 1
-      local size = ml_packet_size(typ)
+      local size = 0
+      if typ then ml_packet_size(typ) end
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -70,6 +81,19 @@ local function create_connector(p)
       uvm_sl_ml_request_get(p.id, call_id, callback_id)
       sl_scheduler:sleep()
       return ml_unpack(uvm_sl_ml_get_requested(p.id, call_id, callback_id, size))
+    end
+    function c:can_get()
+      return uvm_sl_ml_can_get(p.id)
+    end
+  elseif p.type == "tlm_nonblocking_get" then
+    function c:try_get(typ)
+      if typ then sl_checktype(typ, "string") end
+      local size = 0
+      if typ then ml_packet_size(typ) end 
+      uvm_sl_ml_nb_get(p.id, size)
+    end
+    function c:can_get()
+      return uvm_sl_ml_can_get(p.id)
     end
   else
     err("unsupported connector type "..p.typ)
@@ -118,6 +142,16 @@ function uvm_sl_ml_request_put_callback(id, call_id, callback_id, packet)
   end)
 end
 
+function uvm_sl_ml_can_put_callback(id)
+  local p = find_port_by_id(id)
+  return p:can_put()
+end
+
+function uvm_sl_ml_nb_put_callback(id, packet)
+  local p = find_port_by_id(id)
+  return p:try_put(ml_unpack(packet))
+end
+
 function uvm_sl_ml_request_get_callback(id, call_id, callback_id)
   local p = find_port_by_id(id)
   fork(function()
@@ -133,4 +167,13 @@ function uvm_sl_ml_get_requested_callback(id, call_id, callback_id)
   return ml_pack(data)
 end
 
+function uvm_sl_ml_can_get_callback(id)
+  local p = find_port_by_id(id)
+  return p:can_get()
+end
+
+function uvm_sl_ml_nb_get_callback(id)
+  local p = find_port_by_id(id)
+  return p:try_get()
+end
 

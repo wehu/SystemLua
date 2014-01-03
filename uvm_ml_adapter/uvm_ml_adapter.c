@@ -95,6 +95,42 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   return 1;
 }
 
+static int uvm_sl_ml_nb_put(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int stream_size = luaL_getn(L, 2);
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 4);
+    stream[i-1] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  int res = BP(nb_put)(
+    framework_id,
+    id,
+    stream_size,
+    stream,
+    m_time_unit,
+    m_time_value
+  );
+  lua_pushboolean(L, res);
+  return 1;
+}
+
+static int uvm_sl_ml_can_put(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int res = BP(can_put)(framework_id, id, m_time_unit, m_time_value);
+  lua_pushboolean(L, res);
+  return 1;
+}
+
 static int uvm_sl_ml_request_get(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
@@ -137,12 +173,52 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   lua_newtable(L);
   int top = lua_gettop(L);
   int i = 1;
-  for(;i <= stream_size; i++) {
+  //for(;i <= stream_size; i++) {
+  for(;i <= size; i++) {
     lua_pushnumber(L, i); 
     lua_pushnumber(L, stream[i-1]);
     lua_settable(L, top);
   };
   //free(stream);
+  return 1;
+}
+
+static int uvm_sl_ml_nb_get(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int stream_size = luaL_checknumber(L, 2);
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
+  int res = BP(nb_get)(
+    framework_id,
+    id,
+    &stream_size,
+    stream,
+    m_time_unit,
+    m_time_value
+  );
+  if (res) {
+    lua_newtable(L);
+    int top = lua_gettop(L);
+    int i = 1;
+    //for(;i <= stream_size; i++) {
+    for(;i <= stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else
+    lua_pushnil(L);
+  return 1;
+}
+
+static int uvm_sl_ml_can_get(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int res = BP(can_get)(framework_id, id, m_time_unit, m_time_value);
+  lua_pushboolean(L, res);
   return 1;
 }
 
@@ -205,17 +281,30 @@ static void startup() {
   lua_pushcfunction(L, uvm_sl_ml_request_put);
   lua_setglobal(L, "uvm_sl_ml_request_put");
 
+  lua_pushcfunction(L, uvm_sl_ml_can_put);
+  lua_setglobal(L, "uvm_sl_ml_can_put");
+
+  lua_pushcfunction(L, uvm_sl_ml_nb_put);
+  lua_setglobal(L, "uvm_sl_ml_nb_put");
+
   lua_pushcfunction(L, uvm_sl_ml_request_get);
   lua_setglobal(L, "uvm_sl_ml_request_get");
 
   lua_pushcfunction(L, uvm_sl_ml_get_requested);
   lua_setglobal(L, "uvm_sl_ml_get_requested");
 
+  lua_pushcfunction(L, uvm_sl_ml_can_get);
+  lua_setglobal(L, "uvm_sl_ml_can_get");
+
+  lua_pushcfunction(L, uvm_sl_ml_nb_get);
+  lua_setglobal(L, "uvm_sl_ml_nb_get");
+
   lua_pushcfunction(L, uvm_sl_ml_get_type_id);
   lua_setglobal(L, "uvm_sl_ml_get_type_id");
 
   lua_pushcfunction(L, uvm_sl_ml_get_type_name);
   lua_setglobal(L, "uvm_sl_ml_get_type_name");
+
 
   lua_pushcfunction(L, uvm_sl_ml_create_component_proxy);
   lua_setglobal(L, "uvm_sl_ml_create_component_proxy");
@@ -351,6 +440,42 @@ static int request_put(
   return 0;
 }
 
+static int can_put(
+  unsigned connector_id,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_can_put_callback");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = lua_tonumber(L, -1);
+  return res;
+}
+
+static int nb_put(
+  unsigned connector_id,
+  unsigned stream_size ,
+  uvm_ml_stream_t stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_nb_put_callback");
+  lua_pushnumber(L, connector_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  if (lua_pcall(L, 2, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = lua_tonumber(L, -1);
+  return res;
+}
+
 static int request_get(
   unsigned connector_id,
   unsigned call_id,
@@ -395,6 +520,44 @@ static unsigned get_requested(
   };
   lua_pop(L, 2);
   return stream_size;
+}
+
+static int can_get(
+  unsigned connector_id,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_can_get_callback");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = lua_tonumber(L, -1);
+  return res;
+}
+
+static int nb_get(
+  unsigned connector_id,
+  unsigned * stream_size_ptr,
+  uvm_ml_stream_t stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_nb_get_callback");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int stream_size = luaL_getn(L, -1);
+  if (stream_size == 1) return 0;
+  *stream_size_ptr = stream_size;
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, -2);
+    stream[i-1] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return 1;
 }
 
 static void notify_end_blocking(
@@ -457,13 +620,13 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   required_api->find_connector_id_by_name_ptr = find_connector_id_by_name;
   required_api->get_connector_intf_name_ptr = get_connector_intf_name;
   required_api->is_export_connector_ptr = is_export_connector;
-  //required_api->try_put_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_put;
-  //required_api->can_put_ptr = uvm_ml_tlm_rec::can_put;
+  required_api->try_put_uvm_ml_stream_ptr = nb_put;
+  required_api->can_put_ptr = can_put;
   required_api->put_uvm_ml_stream_request_ptr = request_put;
   required_api->get_uvm_ml_stream_request_ptr = request_get;
   required_api->get_requested_uvm_ml_stream_ptr = get_requested;
-  //required_api->try_get_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_get;
-  //required_api->can_get_ptr = uvm_ml_tlm_rec::can_get;
+  required_api->try_get_uvm_ml_stream_ptr = nb_get;
+  required_api->can_get_ptr = can_get;
   //required_api->peek_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_peek;
   //required_api->peek_requested_uvm_ml_stream_ptr = uvm_ml_tlm_rec::peek_requested;
   //required_api->try_peek_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_peek;
