@@ -75,7 +75,7 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
     lua_next(L, 4);
-    stream[i-1] = lua_tointeger(L, -1);
+    stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 1);
@@ -107,7 +107,7 @@ static int uvm_sl_ml_nb_put(lua_State * L) {
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
     lua_next(L, 4);
-    stream[i-1] = lua_tointeger(L, -1);
+    stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 1);
@@ -206,7 +206,8 @@ static int uvm_sl_ml_nb_get(lua_State * L) {
     lua_pushnumber(L, 0);
     lua_settable(L, top);
   };
-  return 1;
+  lua_pushboolean(L, res);
+  return 2;
 }
 
 static int uvm_sl_ml_can_get(lua_State * L) {
@@ -291,7 +292,8 @@ static int uvm_sl_ml_nb_peek(lua_State * L) {
     lua_pushnumber(L, 0);
     lua_settable(L, top);
   };
-  return 1;
+  lua_pushboolean(L, res);
+  return 2;
 }
 
 static int uvm_sl_ml_can_peek(lua_State * L) {
@@ -428,8 +430,8 @@ static int construct_top(const char* filename, const char * instance_name){
     error(L, "%s", lua_tostring(L, -1));
 
   lua_getfield(L, -1, "id");
-  int id = lua_tointeger(L, -1);
-  lua_pop(L, 1);
+  int id = luaL_checkinteger(L, -1);
+  lua_pop(L, 2);
   return id; 
 }
 
@@ -479,8 +481,8 @@ static int find_connector_id_by_name(const char * path) {
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   lua_getfield(L, -1, "id");
-  int id = lua_tointeger(L, -1);
-  lua_pop(L, 1);
+  int id = luaL_checkinteger(L, -1);
+  lua_pop(L, 2);
   return id;
 }
 
@@ -490,8 +492,8 @@ static const char* get_connector_intf_name(unsigned connector_id) {
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   lua_getfield(L, -1, "type");
-  const char * intf_name = lua_tostring(L, -1);
-  lua_pop(L, 1);
+  const char * intf_name = luaL_checkstring(L, -1);
+  lua_pop(L, 2);
   return intf_name;
 }
 
@@ -502,7 +504,7 @@ static unsigned is_export_connector(unsigned connector_id) {
     error(L, "%s", lua_tostring(L, -1));
   lua_getfield(L, -1, "is_export");
   int is_export = lua_toboolean(L, -1);
-  lua_pop(L, 1);
+  lua_pop(L, 2);
   return is_export;
 }
 
@@ -542,6 +544,7 @@ static int can_put(
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
   return res;
 }
 
@@ -565,6 +568,7 @@ static int nb_put(
   if (lua_pcall(L, 2, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
   return res;
 }
 
@@ -600,15 +604,8 @@ static unsigned get_requested(
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
     lua_next(L, -2);
-    stream[i-1] = lua_tointeger(L, -1);
+    stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
-    //if(i == 2) {
-    //  lua_getglobal(L, "uvm_sl_ml_check_type_size");
-    //  lua_pushnumber(L, stream[i-1]);
-    //  lua_pushnumber(L, stream_size);
-    //  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
-    //    error(L, "%s", lua_tostring(L, -1));
-    //};
   };
   lua_pop(L, 2);
   return stream_size;
@@ -624,6 +621,7 @@ static int can_get(
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
   return res;
 }
 
@@ -636,20 +634,21 @@ static int nb_get(
 ) {
   lua_getglobal(L, "uvm_sl_ml_nb_get_callback");
   lua_pushnumber(L, connector_id);
-  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+  if (lua_pcall(L, 1, 2, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
+  int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
   int stream_size = luaL_getn(L, -1);
-  if (stream_size == 1) return 0;
   *stream_size_ptr = stream_size;
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
     lua_next(L, -2);
-    stream[i-1] = lua_tointeger(L, -1);
+    stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 2);
-  return 1;
+  return res;
 }
 
 static int request_peek(
@@ -684,15 +683,8 @@ static unsigned peek_requested(
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
     lua_next(L, -2);
-    stream[i-1] = lua_tointeger(L, -1);
+    stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
-    //if(i == 2) {
-    //  lua_getglobal(L, "uvm_sl_ml_check_type_size");
-    //  lua_pushnumber(L, stream[i-1]);
-    //  lua_pushnumber(L, stream_size);
-    //  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
-    //    error(L, "%s", lua_tostring(L, -1));
-    //};
   };
   lua_pop(L, 2);
   return stream_size;
@@ -708,6 +700,7 @@ static int can_peek(
   if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
   return res;
 }
 
@@ -720,20 +713,21 @@ static int nb_peek(
 ) {
   lua_getglobal(L, "uvm_sl_ml_nb_peek_callback");
   lua_pushnumber(L, connector_id);
-  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+  if (lua_pcall(L, 1, 2, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
+  int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
   int stream_size = luaL_getn(L, -1);
-  if (stream_size == 1) return 0;
   *stream_size_ptr = stream_size;
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
     lua_next(L, -2);
-    stream[i-1] = lua_tointeger(L, -1);
+    stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 2);
-  return 1;
+  return res;
 }
 
 static void notify_end_blocking(
@@ -778,8 +772,8 @@ static int create_child_junction_node(
   if (lua_pcall(L, 5, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   lua_getfield(L, -1, "id");
-  int id = lua_tointeger(L, -1);
-  lua_pop(L, 1);
+  int id = luaL_checkinteger(L, -1);
+  lua_pop(L, 2);
   return id;
 }
 

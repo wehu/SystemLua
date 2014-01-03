@@ -84,7 +84,8 @@ local function create_connector(p)
     end
   elseif p.type == "tlm_nonblocking_get" then
     function c:try_get()
-      return ml_unpack(uvm_sl_ml_nb_get(p.id))
+      local data, r = uvm_sl_ml_nb_get(p.id)
+      return ml_unpack(data), r
     end
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
@@ -111,7 +112,8 @@ local function create_connector(p)
     end
   elseif p.type == "tlm_nonblocking_peek" then
     function c:try_peek()
-      return ml_unpack(uvm_sl_ml_nb_peek(p.id))
+      local data, r = uvm_sl_ml_nb_peek(p.id)
+      return ml_unpack(data), r
     end
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
@@ -195,7 +197,8 @@ end
 
 function uvm_sl_ml_nb_get_callback(id)
   local p = find_port_by_id(id)
-  return ml_pack(p:try_get())
+  local data, r = p:try_get()
+  return ml_pack(data), (r ~= false)
 end
 
 function uvm_sl_ml_request_peek_callback(id, call_id, callback_id)
@@ -220,6 +223,7 @@ end
 
 function uvm_sl_ml_nb_peek_callback(id)
   local p = find_port_by_id(id)
-  return ml_pack(p:try_peek())
+  local data, r = p:try_peek()
+  return ml_pack(data), (r ~= false)
 end
 
