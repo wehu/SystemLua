@@ -189,6 +189,9 @@ function component_proxy(target_fwind, class, name)
   function cp:notify_phase(group, name, action)
     uvm_sl_ml_notify_tree_phase(self.target_fwind, self.proxy_id, group, name)
   end
+  function cp:notify_runtime_phase(group, name, action)
+    uvm_sl_ml_notify_tree_phase(self.target_fwind, self.proxy_id, group, name)
+  end
   return cp
 end
 
