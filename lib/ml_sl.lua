@@ -63,12 +63,9 @@ local function create_connector(p)
       return uvm_sl_ml_can_put(p.id)
     end
   elseif p.type == "tlm_blocking_get" then
-    function c:get(typ)
-      if typ then sl_checktype(typ, "string") end
+    function c:get()
       call_id = call_id + 1
       callback_id = callback_id + 1
-      local size = 0
-      if typ then ml_packet_size(typ) end
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -80,28 +77,22 @@ local function create_connector(p)
       --callbacks[callback_id] = cb
       uvm_sl_ml_request_get(p.id, call_id, callback_id)
       sl_scheduler:sleep()
-      return ml_unpack(uvm_sl_ml_get_requested(p.id, call_id, callback_id, size))
+      return ml_unpack(uvm_sl_ml_get_requested(p.id, call_id, callback_id))
     end
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
     end
   elseif p.type == "tlm_nonblocking_get" then
-    function c:try_get(typ)
-      if typ then sl_checktype(typ, "string") end
-      local size = 0
-      if typ then size = ml_packet_size(typ) end 
-      return ml_unpack(uvm_sl_ml_nb_get(p.id, size))
+    function c:try_get()
+      return ml_unpack(uvm_sl_ml_nb_get(p.id))
     end
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
     end
   elseif p.type == "tlm_blocking_peek" then
-    function c:peek(typ)
-      if typ then sl_checktype(typ, "string") end
+    function c:peek()
       call_id = call_id + 1
       callback_id = callback_id + 1
-      local size = 0
-      if typ then ml_packet_size(typ) end
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -113,23 +104,20 @@ local function create_connector(p)
       --callbacks[callback_id] = cb
       uvm_sl_ml_request_peek(p.id, call_id, callback_id)
       sl_scheduler:sleep()
-      return ml_unpack(uvm_sl_ml_peek_requested(p.id, call_id, callback_id, size))
+      return ml_unpack(uvm_sl_ml_peek_requested(p.id, call_id, callback_id))
     end
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
     end
   elseif p.type == "tlm_nonblocking_peek" then
-    function c:try_peek(typ)
-      if typ then sl_checktype(typ, "string") end
-      local size = 0
-      if typ then size = ml_packet_size(typ) end
-      return ml_unpack(uvm_sl_ml_nb_peek(p.id, size))
+    function c:try_peek()
+      return ml_unpack(uvm_sl_ml_nb_peek(p.id))
     end
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
     end
   else
-    err("unsupported connector type "..p.typ)
+    err("unsupported connector type "..p.type)
   end
   return c
 end

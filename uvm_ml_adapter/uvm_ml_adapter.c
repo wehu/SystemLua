@@ -156,12 +156,9 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  unsigned stream_size = luaL_checknumber(L, 4);
-  //unsigned stream[stream_size+100]; 
   // FIXME: have to use max size of stream, or will result into memory problem
   unsigned stream[PACK_MAX_SIZE];
   memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
-  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   unsigned size = BP(get_requested)(
     framework_id,
@@ -169,11 +166,9 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
     call_id,
     stream
   );
-  //assert(stream_size == size);
   lua_newtable(L);
   int top = lua_gettop(L);
   int i = 1;
-  //for(;i <= stream_size; i++) {
   for(;i <= size; i++) {
     lua_pushnumber(L, i); 
     lua_pushnumber(L, stream[i-1]);
@@ -186,11 +181,9 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
 static int uvm_sl_ml_nb_get(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
-  int stream_size = luaL_checknumber(L, 2);
+  int stream_size = 0;
   unsigned stream[PACK_MAX_SIZE];
   memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
-  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
-  //assert(stream);
   int res = BP(nb_get)(
     framework_id,
     id,
@@ -203,7 +196,6 @@ static int uvm_sl_ml_nb_get(lua_State * L) {
   int top = lua_gettop(L);
   if (res) {
     int i = 1;
-    //for(;i <= stream_size; i++) {
     for(;i <= stream_size; i++) {
       lua_pushnumber(L, i);
       lua_pushnumber(L, stream[i-1]);
@@ -250,24 +242,18 @@ static int uvm_sl_ml_peek_requested(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  unsigned stream_size = luaL_checknumber(L, 4);
-  //unsigned stream[stream_size+100];
   // FIXME: have to use max size of stream, or will result into memory problem
   unsigned stream[PACK_MAX_SIZE];
   memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
-  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
-  //assert(stream);
   unsigned size = BP(peek_requested)(
     framework_id,
     id,
     call_id,
     stream
   );
-  //assert(stream_size == size);
   lua_newtable(L);
   int top = lua_gettop(L);
   int i = 1;
-  //for(;i <= stream_size; i++) {
   for(;i <= size; i++) {
     lua_pushnumber(L, i);
     lua_pushnumber(L, stream[i-1]);
@@ -280,11 +266,9 @@ static int uvm_sl_ml_peek_requested(lua_State * L) {
 static int uvm_sl_ml_nb_peek(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
-  int stream_size = luaL_checknumber(L, 2);
+  int stream_size = 0;
   unsigned stream[PACK_MAX_SIZE];
   memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
-  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
-  //assert(stream);
   int res = BP(nb_peek)(
     framework_id,
     id,
@@ -297,7 +281,6 @@ static int uvm_sl_ml_nb_peek(lua_State * L) {
   int top = lua_gettop(L);
   if (res) {
     int i = 1;
-    //for(;i <= stream_size; i++) {
     for(;i <= stream_size; i++) {
       lua_pushnumber(L, i);
       lua_pushnumber(L, stream[i-1]);
