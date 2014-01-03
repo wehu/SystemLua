@@ -225,6 +225,100 @@ static int uvm_sl_ml_can_get(lua_State * L) {
   return 1;
 }
 
+static int uvm_sl_ml_request_peek(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  unsigned done = 0;
+  int disable = BP(request_peek)(
+    framework_id,
+    id,
+    call_id,
+    0,
+    0,
+    &done,
+    &m_time_unit,
+    &m_time_value
+  );
+  lua_pushnumber(L, disable);
+  return 1;
+}
+
+static int uvm_sl_ml_peek_requested(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  unsigned stream_size = luaL_checknumber(L, 4);
+  //unsigned stream[stream_size+100];
+  // FIXME: have to use max size of stream, or will result into memory problem
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
+  unsigned size = BP(peek_requested)(
+    framework_id,
+    id,
+    call_id,
+    stream
+  );
+  //assert(stream_size == size);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  //for(;i <= stream_size; i++) {
+  for(;i <= size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  //free(stream);
+  return 1;
+}
+
+static int uvm_sl_ml_nb_peek(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int stream_size = luaL_checknumber(L, 2);
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
+  int res = BP(nb_peek)(
+    framework_id,
+    id,
+    &stream_size,
+    stream,
+    m_time_unit,
+    m_time_value
+  );
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  if (res) {
+    int i = 1;
+    //for(;i <= stream_size; i++) {
+    for(;i <= stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
+  return 1;
+}
+
+static int uvm_sl_ml_can_peek(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int res = BP(can_peek)(framework_id, id, m_time_unit, m_time_value);
+  lua_pushboolean(L, res);
+  return 1;
+}
+
 static int uvm_sl_ml_get_type_id(lua_State * L) {
   const char * name = luaL_checkstring(L, 1);
   unsigned id = BP(get_type_id_from_name)(framework_id, name);
@@ -301,6 +395,18 @@ static void startup() {
 
   lua_pushcfunction(L, uvm_sl_ml_nb_get);
   lua_setglobal(L, "uvm_sl_ml_nb_get");
+
+  lua_pushcfunction(L, uvm_sl_ml_request_peek);
+  lua_setglobal(L, "uvm_sl_ml_request_peek");
+
+  lua_pushcfunction(L, uvm_sl_ml_peek_requested);
+  lua_setglobal(L, "uvm_sl_ml_peek_requested");
+
+  lua_pushcfunction(L, uvm_sl_ml_can_peek);
+  lua_setglobal(L, "uvm_sl_ml_can_peek");
+
+  lua_pushcfunction(L, uvm_sl_ml_nb_peek);
+  lua_setglobal(L, "uvm_sl_ml_nb_peek");
 
   lua_pushcfunction(L, uvm_sl_ml_get_type_id);
   lua_setglobal(L, "uvm_sl_ml_get_type_id");
@@ -563,6 +669,90 @@ static int nb_get(
   return 1;
 }
 
+static int request_peek(
+  unsigned connector_id,
+  unsigned call_id,
+  unsigned callback_adapter_id,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_request_peek_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, callback_adapter_id);
+  if (lua_pcall(L, 3, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
+}
+
+static unsigned peek_requested(
+    unsigned connector_id,
+    unsigned call_id,
+    uvm_ml_stream_t stream
+) {
+  lua_getglobal(L, "uvm_sl_ml_peek_requested_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, call_id);
+  if (lua_pcall(L, 3, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int stream_size = luaL_getn(L, -1);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, -2);
+    stream[i-1] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    //if(i == 2) {
+    //  lua_getglobal(L, "uvm_sl_ml_check_type_size");
+    //  lua_pushnumber(L, stream[i-1]);
+    //  lua_pushnumber(L, stream_size);
+    //  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    //    error(L, "%s", lua_tostring(L, -1));
+    //};
+  };
+  lua_pop(L, 2);
+  return stream_size;
+}
+
+static int can_peek(
+  unsigned connector_id,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_can_peek_callback");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = lua_toboolean(L, -1);
+  return res;
+}
+
+static int nb_peek(
+  unsigned connector_id,
+  unsigned * stream_size_ptr,
+  uvm_ml_stream_t stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_nb_peek_callback");
+  lua_pushnumber(L, connector_id);
+  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int stream_size = luaL_getn(L, -1);
+  if (stream_size == 1) return 0;
+  *stream_size_ptr = stream_size;
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, -2);
+    stream[i-1] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return 1;
+}
+
 static void notify_end_blocking(
   unsigned call_id,
   uvm_ml_time_unit time_unit,
@@ -630,10 +820,10 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   required_api->get_requested_uvm_ml_stream_ptr = get_requested;
   required_api->try_get_uvm_ml_stream_ptr = nb_get;
   required_api->can_get_ptr = can_get;
-  //required_api->peek_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_peek;
-  //required_api->peek_requested_uvm_ml_stream_ptr = uvm_ml_tlm_rec::peek_requested;
-  //required_api->try_peek_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_peek;
-  //required_api->can_peek_ptr = uvm_ml_tlm_rec::can_peek;
+  required_api->peek_uvm_ml_stream_request_ptr = request_peek;
+  required_api->peek_requested_uvm_ml_stream_ptr = peek_requested;
+  required_api->try_peek_uvm_ml_stream_ptr = nb_peek;
+  required_api->can_peek_ptr = can_peek;
   //required_api->transport_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_transport;
   //required_api->transport_response_uvm_ml_stream_ptr = uvm_ml_tlm_rec::transport_response;
   //required_api->nb_transport_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_transport;

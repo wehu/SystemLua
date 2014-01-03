@@ -95,6 +95,39 @@ local function create_connector(p)
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
     end
+  elseif p.type == "tlm_blocking_peek" then
+    function c:peek(typ)
+      if typ then sl_checktype(typ, "string") end
+      call_id = call_id + 1
+      callback_id = callback_id + 1
+      local size = 0
+      if typ then ml_packet_size(typ) end
+      local th = sl_scheduler.current
+      sl_checktype(th, "thread")
+      local cb = function(call_id, callback_id)
+        sl_scheduler:wake(th)
+        --callbacks[callback_id] = nil
+        calls[call_id] = nil
+      end
+      calls[call_id] = cb
+      --callbacks[callback_id] = cb
+      uvm_sl_ml_request_peek(p.id, call_id, callback_id)
+      sl_scheduler:sleep()
+      return ml_unpack(uvm_sl_ml_peek_requested(p.id, call_id, callback_id, size))
+    end
+    function c:can_peek()
+      return uvm_sl_ml_can_peek(p.id)
+    end
+  elseif p.type == "tlm_nonblocking_peek" then
+    function c:try_peek(typ)
+      if typ then sl_checktype(typ, "string") end
+      local size = 0
+      if typ then size = ml_packet_size(typ) end
+      return ml_unpack(uvm_sl_ml_nb_peek(p.id, size))
+    end
+    function c:can_peek()
+      return uvm_sl_ml_can_peek(p.id)
+    end
   else
     err("unsupported connector type "..p.typ)
   end
@@ -175,5 +208,30 @@ end
 function uvm_sl_ml_nb_get_callback(id)
   local p = find_port_by_id(id)
   return ml_pack(p:try_get())
+end
+
+function uvm_sl_ml_request_peek_callback(id, call_id, callback_id)
+  local p = find_port_by_id(id)
+  fork(function()
+    requests[call_id] = p:peek()
+    uvm_sl_ml_notify_end_blocking(call_id, callback_id)
+  end)
+end
+
+function uvm_sl_ml_peek_requested_callback(id, call_id, callback_id)
+  --local p = find_port_by_id(id)
+  local data = requests[call_id]
+  requests[call_id] = nil
+  return ml_pack(data)
+end
+
+function uvm_sl_ml_can_peek_callback(id)
+  local p = find_port_by_id(id)
+  return p:can_peek()
+end
+
+function uvm_sl_ml_nb_peek_callback(id)
+  local p = find_port_by_id(id)
+  return ml_pack(p:try_peek())
 end
 
