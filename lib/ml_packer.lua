@@ -58,13 +58,11 @@ function ml_pack(data)
   if typ == "table" and data.type then
     typ = data.type
   end
-  if packers[typ] and packers[typ].sl_pack then
+  if typ == nil then
+    table.insert(packet, 0)
+  elseif packers[typ] and packers[typ].sl_pack then
     local id = uvm_sl_ml_get_type_id(typ)
-    if data == nil then
-      table.insert(packet, 0)
-    else
-      table.insert(packet, 1)
-    end
+    table.insert(packet, 1)
     table.insert(packet, id)
     packers[typ].sl_pack(packet, data)
     --id = uvm_sl_ml_get_type_id("unsigned")
@@ -94,6 +92,9 @@ end
 function ml_packet_size(typ)
   sl_checktype(typ, "string")
   local size = 0
+  if typ == nil then
+    return 1
+  end
   if packers[typ] and packers[typ].sl_size then
     size = packers[typ].sl_size
   else
@@ -102,6 +103,7 @@ function ml_packet_size(typ)
   return size
 end
 
+--[[
 function uvm_sl_ml_check_type_size(id, size)
   local typ = uvm_sl_ml_get_type_name(id)
   local packet_size = ml_packet_size(typ)
@@ -109,6 +111,7 @@ function uvm_sl_ml_check_type_size(id, size)
     err("the packet size of type "..typ.." expect "..packet_size.." but got "..size)
   end
 end
+--]]
 
 ml_register_packer("number", function(packet, data)
   table.insert(packet, data)
@@ -120,4 +123,3 @@ ml_register_unpacker("number", function(packet)
 end)
 
 ml_set_packet_size("number", 1)
-ml_set_packet_size("nil", 1)

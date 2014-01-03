@@ -68,6 +68,7 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   int stream_size = luaL_getn(L, 4);
   unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
@@ -123,6 +124,7 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   //unsigned stream[stream_size+100]; 
   // FIXME: have to use max size of stream, or will result into memory problem
   unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   unsigned size = BP(get_requested)(
@@ -131,7 +133,7 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
     call_id,
     stream
   );
-  assert(stream_size == size);
+  //assert(stream_size == size);
   lua_newtable(L);
   int top = lua_gettop(L);
   int i = 1;
@@ -342,23 +344,23 @@ static unsigned get_requested(
   lua_pushnumber(L, call_id);
   if (lua_pcall(L, 3, 1, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
-  int len = luaL_getn(L, -1);
+  int stream_size = luaL_getn(L, -1);
   int i = 1;
   lua_pushnil(L);
-  for(; i <= len; i++) {
+  for(; i <= stream_size; i++) {
     lua_next(L, -2);
     stream[i-1] = lua_tointeger(L, -1);
     lua_pop(L, 1);
-    if(i == 2) {
-      lua_getglobal(L, "uvm_sl_ml_check_type_size");
-      lua_pushnumber(L, stream[i-1]);
-      lua_pushnumber(L, len);
-      if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
-        error(L, "%s", lua_tostring(L, -1));
-    };
+    //if(i == 2) {
+    //  lua_getglobal(L, "uvm_sl_ml_check_type_size");
+    //  lua_pushnumber(L, stream[i-1]);
+    //  lua_pushnumber(L, stream_size);
+    //  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    //    error(L, "%s", lua_tostring(L, -1));
+    //};
   };
   lua_pop(L, 2);
-  return len;
+  return stream_size;
 }
 
 static void notify_end_blocking(
