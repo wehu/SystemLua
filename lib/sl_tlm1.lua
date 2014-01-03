@@ -23,62 +23,61 @@ THE SOFTWARE.
 require "sl_port"
 require "sl_util"
 
-function blocking_put_port(name)
-  local p = port(name, "tlm_blocking_put")
-  function p:put(...)
-    self:check_peer()
-    self.peer:put(unpack(arg))
-  end
-  function p:connect(ap)
-    self:check_connection_type(ap, "tlm_blocking_put")
-    self.peer = ap
-  end
-  return p
-end
-
-function blocking_put_port_imp(name, put_imp)
-  local p = port(name, "tlm_blocking_put")
-  p.is_export = true
-  function p:put(...)
-    if put_imp then
-      sl_checktype(put_imp, "function")
-      put_imp(self, unpack(arg))
+local function generate_tlm1_port(pre, typ)
+  local pn = pre.."_"..typ.."_port"
+  local pt = "tlm_"..pre.."_"..typ
+  local can_typ = "can_"..typ
+  _G[pn] = function(name)
+     local p = port(name, pt)
+     p[typ] = function(self, ...)
+       self:check_peer()
+       if not self.peer[typ] then
+         err("cannot find \'"..typ.."\' function in peer")
+       end
+       return self.peer[typ](self.peer, unpack(arg))
+     end
+     p[can_typ] = function(self, ...)
+       self:check_peer()
+       if not self.peer[can_typ] then
+         err("cannot find \'"..can_typ.."\' function in peer")
+       end
+       return self.peer[can_typ](self.peer, unpack(arg))
+     end
+     function p:connect(ap)
+       self:check_connection_type(ap, pt)
+       self.peer = ap
+     end
+     return p
+   end
+  local pni = pre.."_"..typ.."_port_imp"
+  _G[pni] = function(name, imp, can_imp)
+    local p = port(name, pt)
+    p.is_export = true
+    p[typ] = function(self, ...)
+      if imp then
+        sl_checktype(imp, "function")
+        return imp(self, unpack(arg))
+      end
     end
-  end
-  function p:connect(ap)
-    self:check_connection_type(ap, "tlm_blocking_put")
-    ap.peer = self
-  end
-  return p
-end
-
-function blocking_get_port(name)
-  local p = port(name, "tlm_blocking_get")
-  function p:get(...)
-    self:check_peer()
-    return self.peer:get(unpack(arg))
-  end
-  function p:connect(ap)
-    self:check_connection_type(ap, "tlm_blocking_get")
-    self.peer = ap
-  end
-  return p
-end
-
-function blocking_get_port_imp(name, get_imp)
-  local p = port(name, "tlm_blocking_get")
-  p.is_export = true
-  p.requests = {}
-  function p:get(...)
-    if get_imp then
-      sl_checktype(get_imp, "function")
-      return get_imp(self, unpack(arg))
+    p[can_typ] = function(self, ...)
+      if can_imp then
+        sl_checktype(can_imp, "function")
+        return can_imp(self, unpack(arg))
+      end
     end
+    function p:connect(ap)
+      self:check_connection_type(ap, pt)
+      ap.peer = self
+    end
+    return p
   end
-  function p:connect(ap)
-    self:check_connection_type(ap, "tlm_blocking_get")
-    ap.peer = self
-  end
-  return p
 end
+
+generate_tlm1_port("blocking", "put")
+generate_tlm1_port("blocking", "get")
+generate_tlm1_port("blocking", "peek")
+
+generate_tlm1_port("nonblocking", "put")
+generate_tlm1_port("nonblocking", "get")
+generate_tlm1_port("nonblocking", "peek")
 
