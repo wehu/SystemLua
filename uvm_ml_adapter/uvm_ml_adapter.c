@@ -199,9 +199,9 @@ static int uvm_sl_ml_nb_get(lua_State * L) {
     m_time_unit,
     m_time_value
   );
+  lua_newtable(L);
+  int top = lua_gettop(L);
   if (res) {
-    lua_newtable(L);
-    int top = lua_gettop(L);
     int i = 1;
     //for(;i <= stream_size; i++) {
     for(;i <= stream_size; i++) {
@@ -209,8 +209,11 @@ static int uvm_sl_ml_nb_get(lua_State * L) {
       lua_pushnumber(L, stream[i-1]);
       lua_settable(L, top);
     };
-  } else
-    lua_pushnil(L);
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
   return 1;
 }
 

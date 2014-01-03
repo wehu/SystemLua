@@ -58,7 +58,7 @@ function ml_pack(data)
   if typ == "table" and data.type then
     typ = data.type
   end
-  if typ == nil then
+  if typ == "nil" then
     table.insert(packet, 0)
   elseif packers[typ] and packers[typ].sl_pack then
     local id = uvm_sl_ml_get_type_id(typ)
@@ -92,7 +92,7 @@ end
 function ml_packet_size(typ)
   sl_checktype(typ, "string")
   local size = 0
-  if typ == nil then
+  if typ == "nil" then
     return 1
   end
   if packers[typ] and packers[typ].sl_size then
