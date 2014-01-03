@@ -82,10 +82,12 @@ function sl_component:_new(body)
   if e then error(e) end
 end
 
-function sl_component:notify_phase(name)
+function sl_component:notify_phase(group, name, action)
+  sl_checktype(group, "string")
   sl_checktype(name, "string")
+  if action then sl_checktype(action, "number") end
   for i, v in ipairs(self.children) do
-    v:notify_phase(name)
+    v:notify_phase(group, name, action)
   end
   if self[name] and not self.phases_done[name] and self.static_phases[name] then
     if sl_simulator.started then
@@ -97,10 +99,12 @@ function sl_component:notify_phase(name)
   end
 end
 
-function sl_component:notify_runtime_phase(name)
+function sl_component:notify_runtime_phase(group, name, action)
+  sl_checktype(group, "string")
   sl_checktype(name, "string")
+  if action then sl_checktype(action, "number") end
   for i, v in ipairs(self.children) do
-    v:notify_runtime_phase(name)
+    v:notify_runtime_phase(group, name, action)
   end
   if self[name] and not self.phases_done[name] and self.runtime_phases[name] then
     self.phases_done[name] = true
@@ -130,20 +134,20 @@ function component(name, body)
   return c
 end
 
-function notify_phase(name)
+function notify_phase(group, name, action)
   sl_checktype(name, "string")
   for i, v in ipairs(sl_top_components) do
     if not v.virtual then
-      v:notify_phase(name)
+      v:notify_phase(group, name, action)
     end
   end
 end
 
-function notify_runtime_phase(name)
+function notify_runtime_phase(group, name, action)
   sl_checktype(name, "string")
   for k, v in pairs(sl_top_components) do
     if not v.virtual then
-      v:notify_runtime_phase(name)
+      v:notify_runtime_phase(group, name, action)
     end
   end
 end
@@ -157,8 +161,14 @@ function uvm_sl_ml_create_component(class, name, parent_full_path, parent_fwid, 
   virtual_component.path = parent_full_path
   local c = nil
   local _, e = pcall(function ()
+    if not _G[class] then
+      err("cannot find component class "..class)
+    end
     c = _G[class](name)
   end)
+  if e then
+    err(e)
+  end
   c.parent_full_path = parent_full_path
   c.parent_fwid = parent_fwid
   c.parent_id = parent_id
@@ -167,10 +177,7 @@ function uvm_sl_ml_create_component(class, name, parent_full_path, parent_fwid, 
   end
   virtual_component.path = "virtual"
   sl_current_component = saved_parent
-  if e then
-    error(e)
-  end
-  return p
+  return c
 end
 
 function component_proxy(target_fwind, class, name)
@@ -178,11 +185,11 @@ function component_proxy(target_fwind, class, name)
   cp.foreign = true
   cp.target_fwind = target_fwind
   cp.class = class
-  cp.proxy_id = uvm_sl_ml_create_component_proxy(target_fwind, class, name, cp.name, cp.id)
-  function fc:notify_phase(name)
-    uvm_sl_ml_notify_tree_phase(self.target_fwind, self.proxy_id, name)
+  cp.proxy_id = uvm_sl_ml_create_component_proxy(target_fwind, class, name, cp.path, cp.id)
+  function cp:notify_phase(group, name, action)
+    uvm_sl_ml_notify_tree_phase(self.target_fwind, self.proxy_id, group, name)
   end
-  return fc
+  return cp
 end
 
 function find_component_by_id(id)
@@ -192,6 +199,11 @@ function find_component_by_id(id)
     err("unknown component by id "..id)
   end
   return c
+end
+
+function notify_phase_by_id(id, group, phase, action)
+  local c = find_component_by_id(id)
+  c:notify_phase(group, phase, action)
 end
 
 function find_component_by_full_name(name)

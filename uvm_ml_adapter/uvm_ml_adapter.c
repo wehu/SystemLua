@@ -180,8 +180,9 @@ static int uvm_sl_ml_create_component_proxy(lua_State * L) {
 static int uvm_sl_ml_notify_tree_phase(lua_State * L) {
   const char * frwind = luaL_checkstring(L, 1);
   unsigned child_id = luaL_checknumber(L, 2);
-  const char * phase = luaL_checkstring(L, 3);
-  int res = BP(notify_tree_phase)(framework_id, frwind, child_id, "common", phase);
+  const char * group = luaL_checkstring(L, 3);
+  const char * phase = luaL_checkstring(L, 4);
+  int res = BP(notify_tree_phase)(framework_id, frwind, child_id, group, phase);
   return 0;
 }
 
@@ -255,8 +256,10 @@ static int notify_phase(const char * phase_group,
                         const char * phase_name,
                         unsigned int phase_action) {
   lua_getglobal(L, "notify_phase");
+  lua_pushstring(L, phase_group);
   lua_pushstring(L, phase_name);
-  if (lua_pcall(L, 1, 0, lua_stack_base) != 0)
+  lua_pushnumber(L, phase_action);
+  if (lua_pcall(L, 3, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   return 1;
 }
@@ -264,14 +267,12 @@ static int notify_phase(const char * phase_group,
 static int notify_tree_phase(int          target_id,
                              const char * phase_group,
                              const char * phase_name) {
-  lua_getglobal(L, "find_component_by_id");
+  lua_getglobal(L, "notify_phase_by_id");
   lua_pushnumber(L, target_id);
-  if (lua_pcall(L, 1, 1, lua_stack_base) != 0)
-    error(L, "%s", lua_tostring(L, -1));
-  lua_getfield(L, -1, "notify_phase");
-  lua_insert(L, -2);
+  lua_pushstring(L, phase_group);
   lua_pushstring(L, phase_name);
-  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+  lua_pushnumber(L, 0);
+  if (lua_pcall(L, 4, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   return 1;
 }
@@ -283,8 +284,10 @@ static int notify_runtime_phase(const char *     phase_group,
                                 double           time_value,
                                 unsigned int *   participate) {
   lua_getglobal(L, "notify_runtime_phase");
+  lua_pushstring(L, phase_group);
   lua_pushstring(L, phase_name);
-  if (lua_pcall(L, 1, 0, lua_stack_base) != 0)
+  lua_pushnumber(L, phase_action);
+  if (lua_pcall(L, 3, 0, lua_stack_base) != 0)
     error(L, "%s", lua_tostring(L, -1));
   return 1;
 }
@@ -428,7 +431,7 @@ static int create_child_junction_node(
     int          parent_junction_node_id
   ) {
   lua_getglobal(L, "uvm_sl_ml_create_component");
-  lua_getglobal(L, component_type_name);
+  lua_pushstring(L, component_type_name);
   lua_pushstring(L, instance_name);
   lua_pushstring(L, parent_full_name);
   lua_pushnumber(L, parent_framework_id);
