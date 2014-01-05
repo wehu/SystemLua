@@ -106,7 +106,7 @@ static int uvm_sl_ml_nb_put(lua_State * L) {
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
-    lua_next(L, 4);
+    lua_next(L, 2);
     stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
@@ -377,7 +377,7 @@ static int uvm_sl_ml_nb_transport(lua_State * L) {
   int i = 1;
   lua_pushnil(L);
   for(; i <= req_stream_size; i++) {
-    lua_next(L, 4);
+    lua_next(L, 2);
     req_stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
@@ -411,6 +411,31 @@ static int uvm_sl_ml_nb_transport(lua_State * L) {
   };
   lua_pushboolean(L, res);
   return 2;
+}
+
+static int uvm_sl_ml_write(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int stream_size = luaL_getn(L, 2);
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 2);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  BP(write)(
+    framework_id,
+    id,
+    stream_size,
+    stream,
+    m_time_unit,
+    m_time_value
+  );
+  return 0;
 }
 
 static int uvm_sl_ml_get_type_id(lua_State * L) {
@@ -510,6 +535,9 @@ static void startup() {
 
   lua_pushcfunction(L, uvm_sl_ml_nb_transport);
   lua_setglobal(L, "uvm_sl_ml_nb_transport");
+
+  lua_pushcfunction(L, uvm_sl_ml_write);
+  lua_setglobal(L, "uvm_sl_ml_write");
 
   lua_pushcfunction(L, uvm_sl_ml_get_type_id);
   lua_setglobal(L, "uvm_sl_ml_get_type_id");
@@ -935,6 +963,27 @@ static int nb_transport(
   return res;
 }
 
+static void write(
+  unsigned connector_id,
+  unsigned stream_size ,
+  uvm_ml_stream_t stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_write_callback");
+  lua_pushnumber(L, connector_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+}
+
 static void notify_end_blocking(
   unsigned call_id,
   uvm_ml_time_unit time_unit,
@@ -1009,7 +1058,7 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   required_api->transport_uvm_ml_stream_request_ptr = request_transport;
   required_api->transport_response_uvm_ml_stream_ptr = transport_requested;
   required_api->nb_transport_uvm_ml_stream_ptr = nb_transport;
-  //required_api->write_uvm_ml_stream_ptr = uvm_ml_tlm_rec::write;
+  required_api->write_uvm_ml_stream_ptr = write;
   required_api->notify_end_blocking_ptr = notify_end_blocking;
   //required_api->tlm2_b_transport_request_ptr = uvm_ml_tlm_rec::tlm2_b_transport_request;
   //required_api->tlm2_b_transport_response_ptr = uvm_ml_tlm_rec::tlm2_b_transport_response;

@@ -140,6 +140,10 @@ local function create_connector(p)
       local ndata, r = uvm_sl_ml_nb_transport(p.id, ml_pack(data))
       return ml_unpack(ndata), r
     end
+  elseif p.type == "tlm_analysis" then
+    function c:write(data)
+      uvm_sl_ml_write(p.id, ml_pack(data))
+    end
   else
     err("unsupported connector type "..p.type)
   end
@@ -270,3 +274,7 @@ function uvm_sl_ml_nb_transport_callback(id, packet)
   return ml_pack(data), (r ~= false)
 end
 
+function uvm_sl_ml_write_callback(id, packet)
+  local p = find_port_by_id(id)
+  p:write(ml_unpack(packet))
+end

@@ -96,4 +96,4 @@ tlm1_port("nonblocking", "get")
 tlm1_port("nonblocking", "peek")
 tlm1_port("nonblocking", "transport")
 
-tlm1_port("", "analysis")
+tlm1_port("nonblocking", "analysis")
