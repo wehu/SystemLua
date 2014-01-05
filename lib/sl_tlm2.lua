@@ -23,14 +23,69 @@ THE SOFTWARE.
 require "sl_port"
 require "sl_util"
 
+sl_transaction = {ids=0}
+
+sl_transaction_by_id = {}
+
+function sl_transaction:new()
+  local o = {type="transaction", id=sl_transaction.ids}
+  sl_transaction.ids = sl_transaction.ids + 1
+  setmetatable(o, {__index = sl_transaction})
+  sl_transaction_by_id[o.id] = o
+  return o
+end
+
+function find_transaction_by_id(id)
+  sl_checktype(id, "number")
+  if not sl_transaction_by_id[id] then
+    err("cannot find transaction by id "..id)
+  end
+  return sl_transaction_by_id[id]
+end
+
+function transaction()
+  return sl_transaction:new()
+end
+
+sl_time = {}
+
+function sl_time:new(t)
+  if not t then
+    t = 0
+  end
+  sl_checktype(t, "number")
+  local o = {type="time", value=t}
+  setmetatable(o, {__index = sl_time})
+  return o
+end
+
+function time(t)
+  return sl_time:new(t)
+end
+
+sl_phase = {}
+
+function sl_phase:new(p)
+  sl_checktype(p, "string")
+  local o = {type="phase", value=p}
+  setmetatable(o, {__index = sl_phase})
+  return o
+end
+
+function phase(p)
+  return sl_phase:new(p)
+end
+
 function initiator_b_transport_port(name)
   local p = port(name, "tlm_blocking_master")
-  function p:b_transport(trans, phase)
+  function p:b_transport(trans, delay)
+    sl_checktype(trans, "transaction")
+    sl_checktype(delay, "time")
     self:check_peer()
     if not self.peer.b_transport then
       err("cannot find \'b_transport\' function in peer")
     end
-    return self.peer:b_transport(trans, phase)
+    return self.peer:b_transport(trans, delay)
   end
   function p:connect(ap)
     self:check_connection_type(ap, "tlm_blocking_slave")
@@ -42,10 +97,12 @@ end
 
 function target_b_transport_port(name, imp)
   local p = port(name, "tlm_blocking_slave")
-  function p:b_transport(trans, phase)
+  function p:b_transport(trans, delay)
+    sl_checktype(trans, "transaction")
+    sl_checktype(delay, "time")
     if imp then
       sl_checktype(imp, "function")
-      return imp(self, trans, phase)
+      return imp(self, trans, delay)
     end 
   end
   function p:connect(ap)
@@ -59,6 +116,9 @@ end
 function initiator_nb_transport_port(name, imp)
   local p = port(name, "tlm_nonblocking_master")
   function p:nb_transport_fw(trans, phase, delay)
+    sl_checktype(trans, "transaction")
+    sl_checktype(phase, "phase")
+    sl_checktype(delay, "time")
     self:check_peer()
     if not self.peer.nb_transport_fw then
       err("cannot find \'nb_transport_fw\' function in peer")
@@ -66,6 +126,9 @@ function initiator_nb_transport_port(name, imp)
     return self.peer:nb_transport_fw(trans, phase, delay)
   end
   function p:nb_transport_bw(trans, phase, delay)
+    sl_checktype(trans, "transaction")
+    sl_checktype(phase, "phase")
+    sl_checktype(delay, "time")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans, phase, delay)
@@ -82,6 +145,9 @@ end
 function target_nb_transport_port(name)
   local p = port(name, "tlm_nonblocking_slave")
   function p:nb_transport_bw(trans, phase, delay)
+    sl_checktype(trans, "transaction")
+    sl_checktype(phase, "phase")
+    sl_checktype(delay, "time")
     self:check_peer()
     if not self.peer.nb_transport_bw then
       err("cannot find \'nb_transport_bw\' function in peer")
@@ -89,6 +155,9 @@ function target_nb_transport_port(name)
     return self.peer:nb_transport_bw(trans, phase, delay)
   end
   function p:nb_transport_fw(trans, phase, delay)
+    sl_checktype(trans, "transaction")
+    sl_checktype(phase, "phase")
+    sl_checktype(delay, "time")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans, phase, delay)
@@ -105,6 +174,7 @@ end
 function initiator_transport_dbg_port(name)
   local p = port(name, "tlm_master")
   function p:transport_dbg(trans)
+    sl_checktype(trans, "transaction")
     self:check_peer()
     if not self.peer.transport_dbg then
       err("cannot find \'transport_dbg\' function in peer")
@@ -122,6 +192,7 @@ end
 function target_transport_dbg_port(name, imp)
   local p = port(name, "tlm_slave")
   function p:transport_dbg(trans)
+    sl_checktype(trans, "transaction")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans)
@@ -136,9 +207,9 @@ function target_transport_dbg_port(name, imp)
 end
 
 function generic_payload()
-  local gp = {}
+  local gp = transaction()
   gp.command = ""
-  return
+  return gp
 end
 
 
