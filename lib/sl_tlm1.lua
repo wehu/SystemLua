@@ -28,6 +28,14 @@ local function tlm1_port(pre, typ)
   local pt = "tlm_"..pre.."_"..typ
   local can_typ = "can_"..typ
   local bnb_typ = (pre == "nonblocking") and "try_"..typ or typ
+  if typ == "transport" then
+    pn = pre.."_"..typ
+    bnb_typ = (pre == "nonblocking") and "nb_"..typ or typ
+  elseif typ == "analysis" then
+    pn = typ.."_port"
+    pt = "tlm_"..typ
+    bnb_typ = "write"
+  end
   _G[pn] = function(name)
      local p = port(name, pt)
      p[bnb_typ] = function(self, ...)
@@ -37,12 +45,14 @@ local function tlm1_port(pre, typ)
        end
        return self.peer[bnb_typ](self.peer, unpack(arg))
      end
+     if typ ~= "transport" and typ ~= "analysis" then
      p[can_typ] = function(self, ...)
        self:check_peer()
        if not self.peer[can_typ] then
          err("cannot find \'"..can_typ.."\' function in peer")
        end
        return self.peer[can_typ](self.peer, unpack(arg))
+     end
      end
      function p:connect(ap)
        self:check_connection_type(ap, pt)
@@ -60,11 +70,13 @@ local function tlm1_port(pre, typ)
         return imp(self, unpack(arg))
       end
     end
+    if typ ~= "transport" and typ ~= "analysis" then
     p[can_typ] = function(self, ...)
       if can_imp then
         sl_checktype(can_imp, "function")
         return can_imp(self, unpack(arg))
       end
+    end
     end
     function p:connect(ap)
       self:check_connection_type(ap, pt)
@@ -77,8 +89,11 @@ end
 tlm1_port("blocking", "put")
 tlm1_port("blocking", "get")
 tlm1_port("blocking", "peek")
+tlm1_port("blocking", "transport")
 
 tlm1_port("nonblocking", "put")
 tlm1_port("nonblocking", "get")
 tlm1_port("nonblocking", "peek")
+tlm1_port("nonblocking", "transport")
 
+tlm1_port("", "analysis")

@@ -34,3 +34,13 @@ function sl_traceback(msg)
   print(debug.traceback())
   return msg
 end
+
+function extends(self, ...)
+  for i, o in ipairs(arg) do
+    for k, v in pairs(o) do
+      if not self[k] then
+        self[k] = v
+      end
+    end
+  end
+end
