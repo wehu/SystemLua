@@ -304,6 +304,115 @@ static int uvm_sl_ml_can_peek(lua_State * L) {
   return 1;
 }
 
+static int uvm_sl_ml_request_transport(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  int stream_size = luaL_getn(L, 4);
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 4);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  unsigned done = 0;
+  int disable = BP(request_transport)(
+    framework_id,
+    id,
+    call_id,
+    stream_size,
+    stream,
+    0,
+    0,
+    &done,
+    &m_time_unit,
+    &m_time_value
+  );
+  lua_pushnumber(L, disable);
+  return 1;
+}
+
+static int uvm_sl_ml_transport_requested(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  // FIXME: have to use max size of stream, or will result into memory problem
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //assert(stream);
+  unsigned size = BP(transport_response)(
+    framework_id,
+    id,
+    call_id,
+    stream
+  );
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(;i <= size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  //free(stream);
+  return 1;
+}
+
+static int uvm_sl_ml_nb_transport(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int req_stream_size = luaL_getn(L, 2);
+  unsigned req_stream[PACK_MAX_SIZE];
+  memset(req_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
+  //assert(stream);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= req_stream_size; i++) {
+    lua_next(L, 4);
+    req_stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  int rsp_stream_size = 0;
+  unsigned rsp_stream[PACK_MAX_SIZE];
+  memset(rsp_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int res = BP(nb_transport)(
+    framework_id,
+    id,
+    req_stream_size,
+    req_stream,
+    &rsp_stream_size,
+    rsp_stream,
+    m_time_unit,
+    m_time_value
+  );
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  if (res) {
+    int i = 1;
+    for(;i <= rsp_stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, rsp_stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
+  lua_pushboolean(L, res);
+  return 2;
+}
+
 static int uvm_sl_ml_get_type_id(lua_State * L) {
   const char * name = luaL_checkstring(L, 1);
   unsigned id = BP(get_type_id_from_name)(framework_id, name);
@@ -392,6 +501,15 @@ static void startup() {
 
   lua_pushcfunction(L, uvm_sl_ml_nb_peek);
   lua_setglobal(L, "uvm_sl_ml_nb_peek");
+
+  lua_pushcfunction(L, uvm_sl_ml_request_transport);
+  lua_setglobal(L, "uvm_sl_ml_request_transport");
+
+  lua_pushcfunction(L, uvm_sl_ml_transport_requested);
+  lua_setglobal(L, "uvm_sl_ml_transport_requested");
+
+  lua_pushcfunction(L, uvm_sl_ml_nb_transport);
+  lua_setglobal(L, "uvm_sl_ml_nb_transport");
 
   lua_pushcfunction(L, uvm_sl_ml_get_type_id);
   lua_setglobal(L, "uvm_sl_ml_get_type_id");
@@ -730,6 +848,93 @@ static int nb_peek(
   return res;
 }
 
+static int request_transport(
+  unsigned connector_id,
+  unsigned call_id,
+  unsigned callback_adapter_id,
+  unsigned req_stream_size,
+  uvm_ml_stream_t req_stream,
+  unsigned* rsp_stream_size,
+  uvm_ml_stream_t rsp_stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+  ) {
+  lua_getglobal(L, "uvm_sl_ml_request_transport_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, callback_adapter_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= req_stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, req_stream[i-1]);
+    lua_settable(L, top);
+  };
+  if (lua_pcall(L, 4, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
+}
+
+static unsigned transport_requested(
+    unsigned connector_id,
+    unsigned call_id,
+    uvm_ml_stream_t stream
+) {
+  lua_getglobal(L, "uvm_sl_ml_transport_requested_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, call_id);
+  if (lua_pcall(L, 3, 1, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int stream_size = luaL_getn(L, -1);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, -2);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return stream_size;
+}
+
+static int nb_transport(
+  unsigned connector_id,
+  unsigned req_stream_size,
+  uvm_ml_stream_t req_stream,
+  unsigned* rsp_stream_size_ptr,
+  uvm_ml_stream_t rsp_stream,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_nb_transport_callback");
+  lua_pushnumber(L, connector_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= req_stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, req_stream[i-1]);
+    lua_settable(L, top);
+  };
+  if (lua_pcall(L, 2, 2, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = lua_toboolean(L, -1);
+  lua_pop(L, 1);
+  int stream_size = luaL_getn(L, -1);
+  *rsp_stream_size_ptr = stream_size;
+  i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, -2);
+    rsp_stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return res;
+}
+
 static void notify_end_blocking(
   unsigned call_id,
   uvm_ml_time_unit time_unit,
@@ -801,9 +1006,9 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   required_api->peek_requested_uvm_ml_stream_ptr = peek_requested;
   required_api->try_peek_uvm_ml_stream_ptr = nb_peek;
   required_api->can_peek_ptr = can_peek;
-  //required_api->transport_uvm_ml_stream_request_ptr = uvm_ml_tlm_rec::request_transport;
-  //required_api->transport_response_uvm_ml_stream_ptr = uvm_ml_tlm_rec::transport_response;
-  //required_api->nb_transport_uvm_ml_stream_ptr = uvm_ml_tlm_rec::nb_transport;
+  required_api->transport_uvm_ml_stream_request_ptr = request_transport;
+  required_api->transport_response_uvm_ml_stream_ptr = transport_requested;
+  required_api->nb_transport_uvm_ml_stream_ptr = nb_transport;
   //required_api->write_uvm_ml_stream_ptr = uvm_ml_tlm_rec::write;
   required_api->notify_end_blocking_ptr = notify_end_blocking;
   //required_api->tlm2_b_transport_request_ptr = uvm_ml_tlm_rec::tlm2_b_transport_request;

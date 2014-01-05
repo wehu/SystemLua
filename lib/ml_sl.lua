@@ -118,6 +118,28 @@ local function create_connector(p)
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
     end
+  elseif p.type == "tlm_blocking_transport" then
+    function c:transport(data)
+      call_id = call_id + 1
+      callback_id = callback_id + 1
+      local th = sl_scheduler.current
+      sl_checktype(th, "thread")
+      local cb = function(call_id, callback_id)
+        sl_scheduler:wake(th)
+        --callbacks[callback_id] = nil
+        calls[call_id] = nil
+      end
+      calls[call_id] = cb
+      --callbacks[callback_id] = cb
+      uvm_sl_ml_request_transport(p.id, call_id, callback_id, ml_pack(data))
+      sl_scheduler:sleep()
+      return ml_unpack(uvm_sl_ml_transport_requested(p.id, call_id, callback_id))
+    end
+  elseif p.type == "tlm_nonblocking_transport" then
+    function c:nb_transport(data)
+      local ndata, r = uvm_sl_ml_nb_transport(p.id, ml_pack(data))
+      return ml_unpack(ndata), r
+    end
   else
     err("unsupported connector type "..p.type)
   end
@@ -224,6 +246,27 @@ end
 function uvm_sl_ml_nb_peek_callback(id)
   local p = find_port_by_id(id)
   local data, r = p:try_peek()
+  return ml_pack(data), (r ~= false)
+end
+
+function uvm_sl_ml_request_transport_callback(id, call_id, callback_id, packet)
+  local p = find_port_by_id(id)
+  fork(function()
+    requests[call_id] = p:transport(ml_unpack(packet))
+    uvm_sl_ml_notify_end_blocking(call_id, callback_id)
+  end)
+end
+
+function uvm_sl_ml_transport_requested_callback(id, call_id, callback_id)
+  --local p = find_port_by_id(id)
+  local data = requests[call_id]
+  requests[call_id] = nil
+  return ml_pack(data)
+end
+
+function uvm_sl_ml_nb_transport_callback(id, packet)
+  local p = find_port_by_id(id)
+  local data, r = p:nb_transport(ml_unpack(packet))
   return ml_pack(data), (r ~= false)
 end
 
