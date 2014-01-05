@@ -22,6 +22,7 @@ THE SOFTWARE.
 
 require "sl_port"
 require "sl_tlm1"
+require "sl_tlm2"
 require "sl_scheduler"
 require "sl_util"
 require "sl_logger"
@@ -158,6 +159,40 @@ local function create_connector(p)
     function c:write(data)
       uvm_sl_ml_write(p.id, ml_pack(data))
     end
+  elseif p.type == "tlm_blocking_master" then
+    function c:b_transport(trans, delay)
+      call_id = call_id + 1
+      callback_id = callback_id + 1
+      local th = sl_scheduler.current
+      sl_checktype(th, "thread")
+      local cb = function(call_id, callback_id)
+        sl_scheduler:wake(th)
+        --callbacks[callback_id] = nil
+        calls[call_id] = nil
+      end
+      calls[call_id] = cb
+      --callbacks[callback_id] = cb
+      local disable, done = uvm_sl_ml_request_b_transport(p.id, call_id, callback_id, ml_pack(trans), delay)
+      if done then
+        return ml_unpack(data)
+      else
+        sl_scheduler:sleep()
+        local ntrans, ndelay = uvm_sl_ml_b_transport_requested(p.id, call_id, callback_id)
+        return ml_unpack(ntrans), ndelay
+      end
+    end
+  elseif p.type == "tlm_nonblocking_master" then
+    function c:nb_transport_fw(trans, phase, delay)
+      return uvm_sl_ml_nb_transport_fw(p.id, trans.id, ml_pack(trans), ml_pack(phase), delay)
+    end
+  elseif p.type == "tlm_nonblocking_slave" then
+    function c:nb_transport_bw(trans, phase, delay)
+      return uvm_sl_ml_nb_transport_bw(p.id, trans.id, ml_pack(trans), ml_pack(phase), delay)
+    end
+  elseif p.type == "tlm_master" then
+    function c:transport_dbg(trans)
+      return uvm_sl_ml_transport_dbg(p.id, ml_pack(trans))
+    end
   else
     err("unsupported connector type "..p.type)
   end
@@ -291,4 +326,43 @@ end
 function uvm_sl_ml_write_callback(id, packet)
   local p = find_port_by_id(id)
   p:write(ml_unpack(packet))
+end
+
+function uvm_sl_ml_request_b_transport_callback(id, call_id, callback_id, packet, delay)
+  local p = find_port_by_id(id)
+  fork(function()
+    local trans = ml_unpack(packet)
+    p:b_transport(trans, delay)
+    requests[call_id] = {trans, delay}
+    uvm_sl_ml_notify_end_blocking(call_id, callback_id)
+  end)
+end
+
+function uvm_sl_ml_b_transport_requested_callback(id, call_id, callback_id)
+  --local p = find_port_by_id(id)
+  local rsp = requests[call_id]
+  requests[call_id] = nil
+  return ml_pack(rsp[1]), rsp[2]
+end
+
+function uvm_sl_ml_nb_transport_fw_callback(id, trans_packet, phase_packet, delay)
+  local p = find_port_by_id(id)
+  local trans = ml_unpack(trans_packet)
+  local phase = ml_unpack(phase_packet)
+  p:nb_transport_fw(trans, phase, delay)
+  return ml_pack(trans), ml_pack(phase), delay
+end
+
+function uvm_sl_ml_nb_transport_bw_callback(id, trans_packet, phase_packet, delay)
+  local p = find_port_by_id(id)
+  local trans = ml_unpack(trans_packet)
+  local phase = ml_unpack(phase_packet)
+  p:nb_transport_bw(trans, phase, delay)
+  return ml_pack(trans), ml_pack(phase), delay
+end
+
+
+function uvm_sl_ml_transport_dbg_callback(id, packet)
+  local p = find_port_by_id(id)
+  return p:transport_dbg(ml_unpack(packet))
 end
