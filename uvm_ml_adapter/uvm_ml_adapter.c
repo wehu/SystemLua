@@ -91,8 +91,9 @@ static int uvm_sl_ml_request_put(lua_State * L) {
     &m_time_value
   );
   //free(stream);
-  lua_pushnumber(L, disable);
-  return 1;
+  lua_pushboolean(L, disable);
+  lua_pushboolean(L, done);
+  return 2;
 }
 
 static int uvm_sl_ml_nb_put(lua_State * L) {
@@ -133,6 +134,9 @@ static int uvm_sl_ml_can_put(lua_State * L) {
 
 static int uvm_sl_ml_request_get(lua_State * L) {
   assert (bpProvidedAPI != NULL);
+  int stream_size = 0;
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
@@ -141,14 +145,29 @@ static int uvm_sl_ml_request_get(lua_State * L) {
     framework_id,
     id,
     call_id,
-    0,
-    0,
+    &stream_size,
+    stream,
     &done,
     &m_time_unit,
     &m_time_value
   );
-  lua_pushnumber(L, disable);
-  return 1;
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  if (done) {
+    int i = 1;
+    for(;i <= stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
+  lua_pushboolean(L, done);
+  lua_pushboolean(L, disable);
+  return 3;
 }
 
 static int uvm_sl_ml_get_requested(lua_State * L) {
@@ -220,6 +239,9 @@ static int uvm_sl_ml_can_get(lua_State * L) {
 
 static int uvm_sl_ml_request_peek(lua_State * L) {
   assert (bpProvidedAPI != NULL);
+  int stream_size = 0;
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
@@ -228,14 +250,29 @@ static int uvm_sl_ml_request_peek(lua_State * L) {
     framework_id,
     id,
     call_id,
-    0,
-    0,
+    &stream_size,
+    stream,
     &done,
     &m_time_unit,
     &m_time_value
   );
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  if (done) {
+    int i = 1;
+    for(;i <= stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
+  lua_pushboolean(L, done);
   lua_pushnumber(L, disable);
-  return 1;
+  return 3;
 }
 
 static int uvm_sl_ml_peek_requested(lua_State * L) {
@@ -306,19 +343,22 @@ static int uvm_sl_ml_can_peek(lua_State * L) {
 
 static int uvm_sl_ml_request_transport(lua_State * L) {
   assert (bpProvidedAPI != NULL);
+  int rsp_stream_size = 0;
+  unsigned rsp_stream[PACK_MAX_SIZE];
+  memset(rsp_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  int stream_size = luaL_getn(L, 4);
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int req_stream_size = luaL_getn(L, 4);
+  unsigned req_stream[PACK_MAX_SIZE];
+  memset(req_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
   lua_pushnil(L);
-  for(; i <= stream_size; i++) {
+  for(; i <= req_stream_size; i++) {
     lua_next(L, 4);
-    stream[i-1] = luaL_checkinteger(L, -1);
+    req_stream[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 1);
@@ -327,16 +367,31 @@ static int uvm_sl_ml_request_transport(lua_State * L) {
     framework_id,
     id,
     call_id,
-    stream_size,
-    stream,
-    0,
-    0,
+    req_stream_size,
+    req_stream,
+    &rsp_stream_size,
+    rsp_stream,
     &done,
     &m_time_unit,
     &m_time_value
   );
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  if (done) {
+    int i = 1;
+    for(;i <= rsp_stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, rsp_stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
+  lua_pushboolean(L, done);
   lua_pushnumber(L, disable);
-  return 1;
+  return 3;
 }
 
 static int uvm_sl_ml_transport_requested(lua_State * L) {

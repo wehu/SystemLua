@@ -49,8 +49,10 @@ local function create_connector(p)
       end
       calls[call_id] = cb
       --callbacks[callback_id] = cb
-      uvm_sl_ml_request_put(p.id, call_id, callback_id, ml_pack(data))
-      sl_scheduler:sleep()
+      local disable, done = uvm_sl_ml_request_put(p.id, call_id, callback_id, ml_pack(data))
+      if not done then
+        sl_scheduler:sleep()
+      end
     end
     function c:can_put()
       return uvm_sl_ml_can_put(p.id)
@@ -75,9 +77,13 @@ local function create_connector(p)
       end
       calls[call_id] = cb
       --callbacks[callback_id] = cb
-      uvm_sl_ml_request_get(p.id, call_id, callback_id)
-      sl_scheduler:sleep()
-      return ml_unpack(uvm_sl_ml_get_requested(p.id, call_id, callback_id))
+      local data, disable, done = uvm_sl_ml_request_get(p.id, call_id, callback_id)
+      if done then
+        return ml_unpack(data)
+      else
+        sl_scheduler:sleep()
+        return ml_unpack(uvm_sl_ml_get_requested(p.id, call_id, callback_id))
+      end
     end
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
@@ -103,9 +109,13 @@ local function create_connector(p)
       end
       calls[call_id] = cb
       --callbacks[callback_id] = cb
-      uvm_sl_ml_request_peek(p.id, call_id, callback_id)
-      sl_scheduler:sleep()
-      return ml_unpack(uvm_sl_ml_peek_requested(p.id, call_id, callback_id))
+      local data, disable, done = uvm_sl_ml_request_peek(p.id, call_id, callback_id)
+      if done then
+        return ml_unpack(data)
+      else
+        sl_scheduler:sleep()
+        return ml_unpack(uvm_sl_ml_peek_requested(p.id, call_id, callback_id))
+      end
     end
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
@@ -131,9 +141,13 @@ local function create_connector(p)
       end
       calls[call_id] = cb
       --callbacks[callback_id] = cb
-      uvm_sl_ml_request_transport(p.id, call_id, callback_id, ml_pack(data))
-      sl_scheduler:sleep()
-      return ml_unpack(uvm_sl_ml_transport_requested(p.id, call_id, callback_id))
+      local data, disable, done = uvm_sl_ml_request_transport(p.id, call_id, callback_id, ml_pack(data))
+      if done then
+        return ml_unpack(data)
+      else
+        sl_scheduler:sleep()
+        return ml_unpack(uvm_sl_ml_transport_requested(p.id, call_id, callback_id))
+      end
     end
   elseif p.type == "tlm_nonblocking_transport" then
     function c:nb_transport(data)
