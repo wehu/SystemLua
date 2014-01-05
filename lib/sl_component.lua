@@ -47,10 +47,17 @@ function sl_component:new(name, body)
     children={},
     static_phases={
       build=true,
-      connect=true
+      connect=true,
+      resolve_bindings=true,
+      end_of_elaboration=true
     },
     runtime_phases={
-      run=true
+      start_of_simulation=true,
+      run=true,
+      extract=true,
+      check=true,
+      report=true,
+      final=true
     },
     phases_done={},
     id=sl_component.ids}
@@ -96,6 +103,7 @@ function sl_component:notify_phase(group, name, action)
     self.phases_done[name] = true
     self[name](self)
   elseif self.runtime_phases[name] then
+    self:notify_runtime_phase(group, name, action)
   end
 end
 

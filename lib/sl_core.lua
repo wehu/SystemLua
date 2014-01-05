@@ -40,6 +40,7 @@ require "sl_util"
 require "sl_component"
 require "sl_port"
 require "sl_tlm1"
+require "sl_tlm2"
 
 require "ml_sl"
 
