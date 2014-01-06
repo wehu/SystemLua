@@ -394,7 +394,7 @@ static int uvm_sl_ml_request_transport(lua_State * L) {
   return 3;
 }
 
-static int uvm_sl_ml_transport_requested(lua_State * L) {
+static int uvm_sl_ml_transport_response(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
@@ -493,6 +493,194 @@ static int uvm_sl_ml_write(lua_State * L) {
   return 0;
 }
 
+static int uvm_sl_ml_tlm2_request_b_transport(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  int stream_size = luaL_getn(L, 4);
+  unsigned* stream = (unsigned*)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  assert(stream);
+  unsigned* old_ptr = stream;
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  double delay = luaL_checknumber(L, 5);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 4);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  unsigned done = 0;
+  int disable = BP(request_b_transport_tlm2)(
+    framework_id,
+    id,
+    call_id,
+    &stream_size,
+    &stream,
+    m_time_unit,
+    delay,
+    &done,
+    m_time_unit,
+    m_time_value
+  );
+  if (old_ptr != stream) free(old_ptr);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  if (done) {
+    int i = 1;
+    for(;i <= stream_size; i++) {
+      lua_pushnumber(L, i);
+      lua_pushnumber(L, stream[i-1]);
+      lua_settable(L, top);
+    };
+  } else {
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, 0);
+    lua_settable(L, top);
+  };
+  lua_pushnumber(L, delay);
+  lua_pushboolean(L, done);
+  lua_pushnumber(L, disable);
+  free(stream);
+  return 4;
+}
+
+static int uvm_sl_ml_tlm2_b_transport_response(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  unsigned call_id = luaL_checknumber(L, 2);
+  unsigned callback_adapter_id = luaL_checknumber(L, 3);
+  int stream_size = 0;
+  // FIXME: have to use max size of stream, or will result into memory problem
+  unsigned stream[PACK_MAX_SIZE];
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  //assert(stream);
+  BP(b_transport_tlm2_response)(
+    framework_id,
+    id,
+    call_id,
+    &stream_size,
+    stream
+  );
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(;i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  // FIXME no delay return????
+  lua_pushnumber(L, 0);
+  //free(stream);
+  return 2;
+}
+
+static int uvm_sl_ml_tlm2_nb_transport_fw(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int trans_id = luaL_checknumber(L, 2);
+  int stream_size = luaL_getn(L, 3);
+  uvm_ml_tlm_phase phase = (uvm_ml_tlm_phase)LuaL_checknumber(L, 4);
+  double delay = luaL_checknumber(L, 5);
+  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  assert(stream);
+  unsigned *old_ptr = stream;
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 2);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  uvm_ml_tlm_sync_enum res = BP(nb_transport_fw)(
+    framework_id,
+    id,
+    &stream_size,
+    &stream,
+    &phase,
+    trans_id,
+    &m_time_unit,
+    &delay,
+    m_time_unit,
+    m_time_value
+  );
+  if(old_ptr != stream) free(old_ptr);
+  lua_pushnumber(L, res);
+  free(stream);
+  return 1;
+}
+
+static int uvm_sl_ml_tlm2_nb_transport_bw(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int trans_id = luaL_checknumber(L, 2);
+  int stream_size = luaL_getn(L, 3);
+  uvm_ml_tlm_phase phase = (uvm_ml_tlm_phase)LuaL_checknumber(L, 4);
+  double delay = luaL_checknumber(L, 5);
+  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  assert(stream);
+  unsigned *old_ptr = stream;
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 2);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  uvm_ml_tlm_sync_enum res = BP(nb_transport_bw)(
+    framework_id,
+    id,
+    &stream_size,
+    &stream,
+    &phase,
+    trans_id,
+    &m_time_unit,
+    &delay,
+    m_time_unit,
+    m_time_value
+  );
+  if(old_ptr != stream) free(old_ptr);
+  lua_pushnumber(L, res);
+  free(stream);
+  return 1;
+}
+
+static int uvm_sl_ml_tlm2_transport_dbg(lua_State * L) {
+  assert (bpProvidedAPI != NULL);
+  int id = luaL_checknumber(L, 1);
+  int stream_size = luaL_getn(L, 2);
+  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  assert(stream);
+  unsigned *old_ptr = stream;
+  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= stream_size; i++) {
+    lua_next(L, 2);
+    stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 1);
+  BP(transport_dbg)(
+    framework_id,
+    id,
+    &stream_size,
+    &stream,
+    m_time_unit,
+    m_time_value
+  );
+  if (old_ptr != stream) free(old_ptr);
+  free(stream);
+  return 0;
+}
+
 static int uvm_sl_ml_get_type_id(lua_State * L) {
   const char * name = luaL_checkstring(L, 1);
   unsigned id = BP(get_type_id_from_name)(framework_id, name);
@@ -585,14 +773,29 @@ static void startup() {
   lua_pushcfunction(L, uvm_sl_ml_request_transport);
   lua_setglobal(L, "uvm_sl_ml_request_transport");
 
-  lua_pushcfunction(L, uvm_sl_ml_transport_requested);
-  lua_setglobal(L, "uvm_sl_ml_transport_requested");
+  lua_pushcfunction(L, uvm_sl_ml_transport_response);
+  lua_setglobal(L, "uvm_sl_ml_transport_response");
 
   lua_pushcfunction(L, uvm_sl_ml_nb_transport);
   lua_setglobal(L, "uvm_sl_ml_nb_transport");
 
   lua_pushcfunction(L, uvm_sl_ml_write);
   lua_setglobal(L, "uvm_sl_ml_write");
+
+  lua_pushcfunction(L, uvm_sl_ml_tlm2_request_b_transport);
+  lua_setglobal(L, "uvm_sl_ml_tlm2_request_b_transport");
+
+  lua_pushcfunction(L, uvm_sl_ml_tlm2_b_transport_response);
+  lua_setglobal(L, "uvm_sl_ml_tlm2_b_transport_response");
+
+  lua_pushcfunction(L, uvm_sl_ml_tlm2_nb_transport_fw);
+  lua_setglobal(L, "uvm_sl_ml_tlm2_nb_transport_fw");
+
+  lua_pushcfunction(L, uvm_sl_ml_tlm2_nb_transport_bw);
+  lua_setglobal(L, "uvm_sl_ml_tlm2_nb_transport_bw");
+
+  lua_pushcfunction(L, uvm_sl_ml_tlm2_transport_dbg);
+  lua_setglobal(L, "uvm_sl_ml_tlm2_transport_dbg");
 
   lua_pushcfunction(L, uvm_sl_ml_get_type_id);
   lua_setglobal(L, "uvm_sl_ml_get_type_id");
@@ -959,12 +1162,12 @@ static int request_transport(
   return 0;
 }
 
-static unsigned transport_requested(
+static unsigned transport_response(
     unsigned connector_id,
     unsigned call_id,
     uvm_ml_stream_t stream
 ) {
-  lua_getglobal(L, "uvm_sl_ml_transport_requested_callback");
+  lua_getglobal(L, "uvm_sl_ml_transport_response_callback");
   lua_pushnumber(L, connector_id);
   lua_pushnumber(L, call_id);
   lua_pushnumber(L, call_id);
@@ -1039,6 +1242,176 @@ static void write(
     error(L, "%s", lua_tostring(L, -1));
 }
 
+static int tlm2_request_b_transport(
+  unsigned connector_id,
+  unsigned call_id,
+  unsigned callback_adapter_id,
+  unsigned stream_size,
+  uvm_ml_stream_t stream,
+  uvm_ml_time_unit      delay_unit,
+  double                delay_value,
+  uvm_ml_time_unit time_unit,
+  double           time_value
+  ) {
+  lua_getglobal(L, "uvm_sl_ml_tlm2_request_b_transport_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, callback_adapter_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  lua_pushnumber(L, delay_value);
+  if (lua_pcall(L, 5, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
+}
+
+static int tlm2_b_transport_response(
+    unsigned connector_id,
+    unsigned call_id,
+    unsigned * stream_size,
+    uvm_ml_stream_t * stream
+) {
+  lua_getglobal(L, "uvm_sl_ml_tlm2_transport_response_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, call_id);
+  lua_pushnumber(L, call_id);
+  if (lua_pcall(L, 3, 2, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int delay = luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  *stream_size = luaL_getn(L, -1);
+  int i = 1;
+  lua_pushnil(L);
+  for(; i <= *stream_size; i++) {
+    lua_next(L, -2);
+    *stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return *stream_size;
+}
+
+static uvm_ml_tlm_sync_enum tlm2_nb_transport_fw(
+    unsigned              connector_id,
+    unsigned *            stream_size,
+    uvm_ml_stream_t * stream,
+    uvm_ml_tlm_phase *   phase,
+    unsigned int          transaction_id,
+    uvm_ml_time_unit *   delay_unit,
+    double *              delay_value,
+    uvm_ml_time_unit      time_unit,
+    double                time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_tlm2_nb_transport_fw_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, transaction_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= *stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, *stream[i-1]);
+    lua_settable(L, top);
+  };
+  lua_pushnumber(L, (int)(*phase));
+  lua_pushnumber(L, *delay_value);
+  if (lua_pcall(L, 5, 4, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  double delay = luaL_checknumber(L, -1);
+  *delay_value = delay;
+  lua_pop(L, 1);
+  uvm_ml_tlm_phase _phase = (uvm_ml_tlm_phase)luaL_checknumber(L, -1);
+  *phase = _phase;
+  lua_pop(L, 1);
+  *stream_size = luaL_getn(L, -1);
+  i = 1;
+  lua_pushnil(L);
+  for(; i <= *stream_size; i++) {
+    lua_next(L, -2);
+    *stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return res;
+}
+
+static uvm_ml_tlm_sync_enum tlm2_nb_transport_bw(
+    unsigned              connector_id,
+    unsigned *            stream_size,
+    uvm_ml_stream_t * stream,
+    uvm_ml_tlm_phase *   phase,
+    unsigned int          transaction_id,
+    uvm_ml_time_unit *   delay_unit,
+    double *              delay_value,
+    uvm_ml_time_unit      time_unit,
+    double                time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_tlm2_nb_transport_bw_callback");
+  lua_pushnumber(L, connector_id);
+  lua_pushnumber(L, transaction_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= *stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, *stream[i-1]);
+    lua_settable(L, top);
+  };
+  lua_pushnumber(L, (int)(*phase));
+  lua_pushnumber(L, *delay_value);
+  if (lua_pcall(L, 5, 4, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  int res = luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  double delay = luaL_checknumber(L, -1);
+  *delay_value = delay;
+  lua_pop(L, 1);
+  uvm_ml_tlm_phase _phase = (uvm_ml_tlm_phase)luaL_checknumber(L, -1);
+  *phase = _phase;
+  lua_pop(L, 1);
+  *stream_size = luaL_getn(L, -1);
+  i = 1;
+  lua_pushnil(L);
+  for(; i <= *stream_size; i++) {
+    lua_next(L, -2);
+    *stream[i-1] = luaL_checkinteger(L, -1);
+    lua_pop(L, 1);
+  };
+  lua_pop(L, 2);
+  return res;
+}
+
+static unsigned tlm2_transport_dbg(
+    unsigned              connector_id,
+    unsigned *            stream_size,
+    uvm_ml_stream_t * stream,
+    uvm_ml_time_unit      time_unit,
+    double                time_value
+) {
+  lua_getglobal(L, "uvm_sl_ml_tlm2_transport_dbg_callback");
+  lua_pushnumber(L, connector_id);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  int i = 1;
+  for(; i <= *stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, *stream[i-1]);
+    lua_settable(L, top);
+  };
+  if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
+    error(L, "%s", lua_tostring(L, -1));
+  return 0;
+
+}
+
 static void notify_end_blocking(
   unsigned call_id,
   uvm_ml_time_unit time_unit,
@@ -1111,15 +1484,15 @@ static bp_frmw_c_api_struct* uvm_ml_sl_get_required_api() {
   required_api->try_peek_uvm_ml_stream_ptr = nb_peek;
   required_api->can_peek_ptr = can_peek;
   required_api->transport_uvm_ml_stream_request_ptr = request_transport;
-  required_api->transport_response_uvm_ml_stream_ptr = transport_requested;
+  required_api->transport_response_uvm_ml_stream_ptr = transport_response;
   required_api->nb_transport_uvm_ml_stream_ptr = nb_transport;
   required_api->write_uvm_ml_stream_ptr = write;
   required_api->notify_end_blocking_ptr = notify_end_blocking;
-  //required_api->tlm2_b_transport_request_ptr = uvm_ml_tlm_rec::tlm2_b_transport_request;
-  //required_api->tlm2_b_transport_response_ptr = uvm_ml_tlm_rec::tlm2_b_transport_response;
-  //required_api->tlm2_nb_transport_fw_ptr =  uvm_ml_tlm_rec::tlm2_nb_transport_fw;
-  //required_api->tlm2_nb_transport_bw_ptr = uvm_ml_tlm_rec::tlm2_nb_transport_bw;
-  //required_api->tlm2_transport_dbg_ptr = uvm_ml_tlm_rec::tlm2_transport_dbg;
+  required_api->tlm2_b_transport_request_ptr = tlm2_request_b_transport;
+  required_api->tlm2_b_transport_response_ptr = tlm2_b_transport_response;
+  required_api->tlm2_nb_transport_fw_ptr = tlm2_nb_transport_fw;
+  required_api->tlm2_nb_transport_bw_ptr = tlm2_nb_transport_bw;
+  required_api->tlm2_transport_dbg_ptr = tlm2_transport_dbg;
   //required_api->tlm2_turn_off_transaction_mapping_ptr = (uvm_ml_tlm_rec::tlm2_turn_off_transaction_mapping);
   required_api->synchronize_ptr = synchronize;
 
