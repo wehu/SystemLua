@@ -610,9 +610,19 @@ static int uvm_sl_ml_tlm2_nb_transport_fw(lua_State * L) {
     m_time_value
   );
   if(old_ptr != stream) free(old_ptr);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  i = 1;
+  for(;i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  lua_pushnumber(L, (int)phase);
+  lua_pushnumber(L, delay);
   lua_pushnumber(L, res);
   free(stream);
-  return 1;
+  return 4;
 }
 
 static int uvm_sl_ml_tlm2_nb_transport_bw(lua_State * L) {
@@ -647,9 +657,19 @@ static int uvm_sl_ml_tlm2_nb_transport_bw(lua_State * L) {
     m_time_value
   );
   if(old_ptr != stream) free(old_ptr);
+  lua_newtable(L);
+  int top = lua_gettop(L);
+  i = 1;
+  for(;i <= stream_size; i++) {
+    lua_pushnumber(L, i);
+    lua_pushnumber(L, stream[i-1]);
+    lua_settable(L, top);
+  };
+  lua_pushnumber(L, (int)phase);
+  lua_pushnumber(L, delay);
   lua_pushnumber(L, res);
   free(stream);
-  return 1;
+  return 4;
 }
 
 static int uvm_sl_ml_tlm2_transport_dbg(lua_State * L) {

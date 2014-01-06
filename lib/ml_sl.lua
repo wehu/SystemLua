@@ -188,17 +188,28 @@ local function create_connector(p)
           trans[k] = v
         end
         delay.value = ndelay
-        return trans, delay
       end
     end
   elseif p.type == "tlm_nonblocking_master" then
     function c:nb_transport_fw(trans, phase, delay)
-      local res = uvm_sl_ml_tlm2_nb_transport_fw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_fw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      ntrans = ml_unpack(ntrans)
+      for k, v in pairs(ntrans) do
+        trans[k] = v
+      end
+      phase.value = nphase
+      delay.value = ndelay
       return res
     end
   elseif p.type == "tlm_nonblocking_slave" then
     function c:nb_transport_bw(trans, phase, delay)
-      local res = uvm_sl_ml_tlm2_nb_transport_bw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_bw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      ntrans = ml_unpack(ntrans)
+      for k, v in pairs(ntrans) do
+        trans[k] = v
+      end
+      phase.value = nphase
+      delay.value = ndelay
       return res
     end
   elseif p.type == "tlm_master" then
@@ -355,12 +366,20 @@ function uvm_sl_ml_tlm2_b_transport_response_callback(id, call_id, callback_id)
   --local p = find_port_by_id(id)
   local rsp = requests[call_id]
   requests[call_id] = nil
-  return ml_pack(rsp[1]), rsp[2]
+  return ml_pack(rsp[1]), rsp[2].value
 end
 
 function uvm_sl_ml_tlm2_nb_transport_fw_callback(id, trans_id, trans_packet, _phase, delay)
   local p = find_port_by_id(id)
-  local trans = ml_unpack(trans_packet)
+  local trans = nil
+  if sl_transaction_by_id[trans_id] then
+    trans = sl_transaction_by_id[trans_id]
+    for k, v in pairs(ml_unpack(trans_packet)) do
+      trans[k] = v
+    end
+  else
+    trans = ml_unpack(trans_packet)
+  end
   _phase = phase(_phase)
   delay = time(delay)
   local res = p:nb_transport_fw(trans, _phase, delay)
@@ -369,7 +388,15 @@ end
 
 function uvm_sl_ml_tlm2_nb_transport_bw_callback(id, trans_id, trans_packet, _phase, delay)
   local p = find_port_by_id(id)
-  local trans = ml_unpack(trans_packet)
+  local trans = nil
+  if sl_transaction_by_id[trans_id] then
+    trans = sl_transaction_by_id[trans_id]
+    for k, v in pairs(ml_unpack(trans_packet)) do
+      trans[k] = v
+    end
+  else
+    trans = ml_unpack(trans_packet)
+  end
   _phase = phase(_phase)
   delay = time(delay)
   local res = p:nb_transport_bw(trans, _phase, delay)
