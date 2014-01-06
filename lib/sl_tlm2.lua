@@ -78,7 +78,8 @@ function phase(p)
 end
 
 function initiator_b_transport(name)
-  local p = port(name, "tlm2_blocking_transport")
+  local p = port(name, "TLM2")
+  p.type2 = "tlm2_blocking_transport"
   function p:b_transport(trans, delay)
     --sl_checktype(trans, "transaction")
     --sl_checktype(delay, "time")
@@ -89,7 +90,7 @@ function initiator_b_transport(name)
     return self.peer:b_transport(trans, delay)
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm2_blocking_transport")
+    self:check_connection_type(ap, "TLM2")
     self.peer = ap
     ap.peer = self
   end
@@ -97,8 +98,9 @@ function initiator_b_transport(name)
 end
 
 function target_b_transport(name, imp)
-  local p = port(name, "tlm2_blocking_transport")
-  p.is_export = true
+  local p = port(name, "TLM2")
+  p.type2 = "tlm2_blocking_transport"
+  p.is_target = true
   function p:b_transport(trans, delay)
     --sl_checktype(trans, "transaction")
     --sl_checktype(delay, "time")
@@ -108,7 +110,7 @@ function target_b_transport(name, imp)
     end 
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm2_blocking_transport")
+    self:check_connection_type(ap, "TLM2")
     ap.peer = self
     self.peer = ap
   end
@@ -116,7 +118,8 @@ function target_b_transport(name, imp)
 end
 
 function initiator_nb_transport(name, imp)
-  local p = port(name, "tlm2_nonblocking_transport")
+  local p = port(name, "TLM2")
+  p.type2 = "tlm2_nonblocking_transport"
   function p:nb_transport_fw(trans, phase, delay)
     --sl_checktype(trans, "transaction")
     --sl_checktype(phase, "phase")
@@ -137,7 +140,7 @@ function initiator_nb_transport(name, imp)
     end
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm2_nonblocking_transport")
+    self:check_connection_type(ap, "TLM2")
     self.peer = ap
     ap.peer = self
   end
@@ -145,8 +148,9 @@ function initiator_nb_transport(name, imp)
 end
 
 function target_nb_transport(name)
-  local p = port(name, "tlm2_nonblocking_transport")
-  p.is_export = true
+  local p = port(name, "TLM2")
+  p.type2 = "tlm2_nonblocking_transport"
+  p.is_target = true
   function p:nb_transport_bw(trans, phase, delay)
     --sl_checktype(trans, "transaction")
     --sl_checktype(phase, "phase")
@@ -167,7 +171,7 @@ function target_nb_transport(name)
     end
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm2_nonblocking_transport")
+    self:check_connection_type(ap, "TLM2")
     self.peer = ap
     ap.peer = self
   end
@@ -175,7 +179,8 @@ function target_nb_transport(name)
 end
 
 function initiator_transport_dbg(name)
-  local p = port(name, "tlm2_transport_dbg")
+  local p = port(name, "TLM2")
+  p.type2 = "tlm2_transport_dbg"
   function p:transport_dbg(trans)
     --sl_checktype(trans, "transaction")
     self:check_peer()
@@ -185,7 +190,7 @@ function initiator_transport_dbg(name)
     return self.peer:transport_dbg(trans)
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm2_transport_dbg")
+    self:check_connection_type(ap, "TLM2")
     self.peer = ap
     ap.peer = self
   end
@@ -193,8 +198,9 @@ function initiator_transport_dbg(name)
 end
 
 function target_transport_dbg(name, imp)
-  local p = port(name, "tlm2_transport_dbg")
-  p.is_export = true
+  local p = port(name, "TLM2")
+  p.type2 = "tlm2_transport_dbg"
+  p.is_target = true
   function p:transport_dbg(trans)
     --sl_checktype(trans, "transaction")
     if imp then
@@ -203,7 +209,7 @@ function target_transport_dbg(name, imp)
     end
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm2_transport_dbg")
+    self:check_connection_type(ap, "TLM2")
     ap.peer = self
     self.peer = ap
   end
