@@ -22,26 +22,27 @@ THE SOFTWARE.
 
 require "sl_port"
 require "sl_util"
+require "ml_packer"
 
 sl_transaction = {ids=0}
 
-sl_transaction_by_id = {}
+--sl_transaction_by_id = {}
 
 function sl_transaction:new()
   local o = {type="transaction", id=sl_transaction.ids}
   sl_transaction.ids = sl_transaction.ids + 1
   setmetatable(o, {__index = sl_transaction})
-  sl_transaction_by_id[o.id] = o
+  --sl_transaction_by_id[o.id] = o
   return o
 end
 
-function find_transaction_by_id(id)
-  sl_checktype(id, "number")
-  if not sl_transaction_by_id[id] then
-    err("cannot find transaction by id "..id)
-  end
-  return sl_transaction_by_id[id]
-end
+--function find_transaction_by_id(id)
+--  sl_checktype(id, "number")
+--  if not sl_transaction_by_id[id] then
+--    err("cannot find transaction by id "..id)
+--  end
+--  return sl_transaction_by_id[id]
+--end
 
 function transaction()
   return sl_transaction:new()
@@ -212,4 +213,14 @@ function generic_payload()
   return gp
 end
 
+ml_register_packer("generic_payload", function(packet, gp)
+  table.insert(packet, gp.command)
+  return packet
+end)
+
+ml_register_unpacker("generic_payload", function(packet)
+  local gp = generic_payload()
+  gp.command = packet[3]
+  return gp
+end)
 
