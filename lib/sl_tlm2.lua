@@ -67,7 +67,7 @@ end
 sl_phase = {}
 
 function sl_phase:new(p)
-  sl_checktype(p, "string")
+  sl_checktype(p, "number")
   local o = {type="phase", value=p}
   setmetatable(o, {__index = sl_phase})
   return o
@@ -147,7 +147,7 @@ function initiator_nb_transport(name, imp)
   return p
 end
 
-function target_nb_transport(name)
+function target_nb_transport(name, imp)
   local p = port(name, "TLM2")
   p.type2 = "tlm2_nonblocking_transport"
   p.is_target = true
