@@ -66,6 +66,12 @@ end
 
 sl_phase = {}
 
+UNINITIALIZED_PHASE = 0
+BEGIN_REQ = 1
+END_REQ = 2
+BEGIN_RESP = 3
+END_RESP = 4
+
 function sl_phase:new(p)
   sl_checktype(p, "number")
   local o = {type="phase", value=p}
@@ -116,6 +122,10 @@ function target_b_transport(name, imp)
   end
   return p
 end
+
+TLM_ACCEPTED = 0
+TLM_UPDATED = 1
+TLM_COMPLETED = 2
 
 function initiator_nb_transport(name, imp)
   local p = port(name, "TLM2")
@@ -216,10 +226,24 @@ function target_transport_dbg(name, imp)
   return p
 end
 
+TLM_READ_COMMAND = 0
+TLM_WRITE_COMMAND = 1
+TLM_IGNORE_COMMAND = 2
+
+TLM_OK_RESPONSE = 1
+TLM_INCOMPLETE_RESPONSE = 0
+TLM_GENERIC_ERROR_RESPONSE = -1
+TLM_ADDRESS_ERROR_RESPONSE = -2
+TLM_COMMAND_ERROR_RESPONSE = -3
+TLM_BURST_ERROR_RESPONSE = -4
+TLM_BYTE_ENABLE_ERROR_RESPONSE = -5
+
 function generic_payload()
   local gp = transaction()
   gp.type = "generic_payload"
   gp.command = 0
+  --gp.address = 0
+  --
   return gp
 end
 
