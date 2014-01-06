@@ -77,11 +77,11 @@ function phase(p)
   return sl_phase:new(p)
 end
 
-function initiator_b_transport_port(name)
-  local p = port(name, "tlm_blocking_master")
+function initiator_b_transport(name)
+  local p = port(name, "tlm2_blocking_transport")
   function p:b_transport(trans, delay)
-    sl_checktype(trans, "transaction")
-    sl_checktype(delay, "time")
+    --sl_checktype(trans, "transaction")
+    --sl_checktype(delay, "time")
     self:check_peer()
     if not self.peer.b_transport then
       err("cannot find \'b_transport\' function in peer")
@@ -89,37 +89,38 @@ function initiator_b_transport_port(name)
     return self.peer:b_transport(trans, delay)
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm_blocking_slave")
+    self:check_connection_type(ap, "tlm2_blocking_transport")
     self.peer = ap
     ap.peer = self
   end
   return p 
 end
 
-function target_b_transport_port(name, imp)
-  local p = port(name, "tlm_blocking_slave")
+function target_b_transport(name, imp)
+  local p = port(name, "tlm2_blocking_transport")
+  p.is_export = true
   function p:b_transport(trans, delay)
-    sl_checktype(trans, "transaction")
-    sl_checktype(delay, "time")
+    --sl_checktype(trans, "transaction")
+    --sl_checktype(delay, "time")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans, delay)
     end 
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm_blocking_master")
+    self:check_connection_type(ap, "tlm2_blocking_transport")
     ap.peer = self
     self.peer = ap
   end
   return p
 end
 
-function initiator_nb_transport_port(name, imp)
-  local p = port(name, "tlm_nonblocking_master")
+function initiator_nb_transport(name, imp)
+  local p = port(name, "tlm2_nonblocking_transport")
   function p:nb_transport_fw(trans, phase, delay)
-    sl_checktype(trans, "transaction")
-    sl_checktype(phase, "phase")
-    sl_checktype(delay, "time")
+    --sl_checktype(trans, "transaction")
+    --sl_checktype(phase, "phase")
+    --sl_checktype(delay, "time")
     self:check_peer()
     if not self.peer.nb_transport_fw then
       err("cannot find \'nb_transport_fw\' function in peer")
@@ -127,28 +128,29 @@ function initiator_nb_transport_port(name, imp)
     return self.peer:nb_transport_fw(trans, phase, delay)
   end
   function p:nb_transport_bw(trans, phase, delay)
-    sl_checktype(trans, "transaction")
-    sl_checktype(phase, "phase")
-    sl_checktype(delay, "time")
+    --sl_checktype(trans, "transaction")
+    --sl_checktype(phase, "phase")
+    --sl_checktype(delay, "time")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans, phase, delay)
     end
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm_nonblocking_slave")
+    self:check_connection_type(ap, "tlm2_nonblocking_transport")
     self.peer = ap
     ap.peer = self
   end
   return p
 end
 
-function target_nb_transport_port(name)
-  local p = port(name, "tlm_nonblocking_slave")
+function target_nb_transport(name)
+  local p = port(name, "tlm2_nonblocking_transport")
+  p.is_export = true
   function p:nb_transport_bw(trans, phase, delay)
-    sl_checktype(trans, "transaction")
-    sl_checktype(phase, "phase")
-    sl_checktype(delay, "time")
+    --sl_checktype(trans, "transaction")
+    --sl_checktype(phase, "phase")
+    --sl_checktype(delay, "time")
     self:check_peer()
     if not self.peer.nb_transport_bw then
       err("cannot find \'nb_transport_bw\' function in peer")
@@ -156,26 +158,26 @@ function target_nb_transport_port(name)
     return self.peer:nb_transport_bw(trans, phase, delay)
   end
   function p:nb_transport_fw(trans, phase, delay)
-    sl_checktype(trans, "transaction")
-    sl_checktype(phase, "phase")
-    sl_checktype(delay, "time")
+    --sl_checktype(trans, "transaction")
+    --sl_checktype(phase, "phase")
+    --sl_checktype(delay, "time")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans, phase, delay)
     end
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm_nonblocking_master")
+    self:check_connection_type(ap, "tlm2_nonblocking_transport")
     self.peer = ap
     ap.peer = self
   end
   return p
 end
 
-function initiator_transport_dbg_port(name)
-  local p = port(name, "tlm_master")
+function initiator_transport_dbg(name)
+  local p = port(name, "tlm2_transport_dbg")
   function p:transport_dbg(trans)
-    sl_checktype(trans, "transaction")
+    --sl_checktype(trans, "transaction")
     self:check_peer()
     if not self.peer.transport_dbg then
       err("cannot find \'transport_dbg\' function in peer")
@@ -183,24 +185,25 @@ function initiator_transport_dbg_port(name)
     return self.peer:transport_dbg(trans)
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm_slave")
+    self:check_connection_type(ap, "tlm2_transport_dbg")
     self.peer = ap
     ap.peer = self
   end
   return p
 end
 
-function target_transport_dbg_port(name, imp)
-  local p = port(name, "tlm_slave")
+function target_transport_dbg(name, imp)
+  local p = port(name, "tlm2_transport_dbg")
+  p.is_export = true
   function p:transport_dbg(trans)
-    sl_checktype(trans, "transaction")
+    --sl_checktype(trans, "transaction")
     if imp then
       sl_checktype(imp, "function")
       return imp(self, trans)
     end
   end
   function p:connect(ap)
-    self:check_connection_type(ap, "tlm_master")
+    self:check_connection_type(ap, "tlm2_transport_dbg")
     ap.peer = self
     self.peer = ap
   end
@@ -209,7 +212,8 @@ end
 
 function generic_payload()
   local gp = transaction()
-  gp.command = ""
+  gp.type = "generic_payload"
+  gp.command = 0
   return gp
 end
 

@@ -40,7 +40,7 @@ local requests = {}
 
 local function create_connector(p)
   local c = {}
-  if p.type == "tlm_blocking_put" then
+  if p.type == "tlm_blocking_put" and not p.is_export then
     function c:put(data)
       call_id = call_id + 1
       callback_id = callback_id + 1
@@ -61,14 +61,14 @@ local function create_connector(p)
     function c:can_put()
       return uvm_sl_ml_can_put(p.id)
     end
-  elseif p.type == "tlm_nonblocking_put" then
+  elseif p.type == "tlm_nonblocking_put" and not p.is_export then
     function c:try_put(data)
       return uvm_sl_ml_nb_put(p.id, ml_pack(data))
     end
     function c:can_put()
       return uvm_sl_ml_can_put(p.id)
     end
-  elseif p.type == "tlm_blocking_get" then
+  elseif p.type == "tlm_blocking_get" and not p.is_export then
     function c:get()
       call_id = call_id + 1
       callback_id = callback_id + 1
@@ -92,7 +92,7 @@ local function create_connector(p)
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
     end
-  elseif p.type == "tlm_nonblocking_get" then
+  elseif p.type == "tlm_nonblocking_get" and not p.is_export then
     function c:try_get()
       local data, r = uvm_sl_ml_nb_get(p.id)
       return ml_unpack(data), r
@@ -100,7 +100,7 @@ local function create_connector(p)
     function c:can_get()
       return uvm_sl_ml_can_get(p.id)
     end
-  elseif p.type == "tlm_blocking_peek" then
+  elseif p.type == "tlm_blocking_peek" and not p.is_export then
     function c:peek()
       call_id = call_id + 1
       callback_id = callback_id + 1
@@ -124,7 +124,7 @@ local function create_connector(p)
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
     end
-  elseif p.type == "tlm_nonblocking_peek" then
+  elseif p.type == "tlm_nonblocking_peek" and not p.is_export then
     function c:try_peek()
       local data, r = uvm_sl_ml_nb_peek(p.id)
       return ml_unpack(data), r
@@ -132,7 +132,7 @@ local function create_connector(p)
     function c:can_peek()
       return uvm_sl_ml_can_peek(p.id)
     end
-  elseif p.type == "tlm_blocking_transport" then
+  elseif p.type == "tlm_blocking_transport" and not p.is_export then
     function c:transport(data)
       call_id = call_id + 1
       callback_id = callback_id + 1
@@ -153,7 +153,7 @@ local function create_connector(p)
         return ml_unpack(uvm_sl_ml_transport_response(p.id, call_id, callback_id))
       end
     end
-  elseif p.type == "tlm_nonblocking_transport" then
+  elseif p.type == "tlm_nonblocking_transport" and not p.is_export then
     function c:nb_transport(data)
       local ndata, r = uvm_sl_ml_nb_transport(p.id, ml_pack(data))
       return ml_unpack(ndata), r
@@ -162,7 +162,7 @@ local function create_connector(p)
     function c:write(data)
       uvm_sl_ml_write(p.id, ml_pack(data))
     end
-  elseif p.type == "tlm_blocking_master" then
+  elseif p.type == "tlm2_blocking_transport" and not p.is_export then
     function c:b_transport(trans, delay)
       call_id = call_id + 1
       callback_id = callback_id + 1
@@ -193,7 +193,7 @@ local function create_connector(p)
         delay.value = ndelay
       end
     end
-  elseif p.type == "tlm_nonblocking_master" then
+  elseif p.type == "tlm2_nonblocking_transport" and not p.is_export then
     function c:nb_transport_fw(trans, phase, delay)
       --call_phases[trans.id] = phase
       --call_delays[trans.id] = delay
@@ -206,7 +206,7 @@ local function create_connector(p)
       delay.value = ndelay
       return res
     end
-  elseif p.type == "tlm_nonblocking_slave" then
+  elseif p.type == "tlm2_nonblocking_transport" and p.is_export then
     function c:nb_transport_bw(trans, phase, delay)
       --call_phases[trans.id] = phase
       --call_delays[trans.id] = delay
@@ -219,12 +219,13 @@ local function create_connector(p)
       delay.value = ndelay
       return res
     end
-  elseif p.type == "tlm_master" then
+  elseif p.type == "tlm2_transport_dbg" and not p.is_export then
     function c:transport_dbg(trans)
       return uvm_sl_ml_tlm2_transport_dbg(p.id, ml_pack(trans))
     end
   else
-    err("unsupported connector type "..p.type)
+    return nil
+  --  err("unsupported connector type "..p.type)
   end
   return c
 end
@@ -232,7 +233,7 @@ end
 function ml_register_port(path)
   sl_checktype(path, "string")
   local p = sl_port.ports[path]
-  if p and not p.is_export then
+  if p then
     p.peer = create_connector(p)
   end
 end

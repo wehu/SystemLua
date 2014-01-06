@@ -165,8 +165,8 @@ static int uvm_sl_ml_request_get(lua_State * L) {
     lua_pushnumber(L, 0);
     lua_settable(L, top);
   };
-  lua_pushboolean(L, done);
   lua_pushboolean(L, disable);
+  lua_pushboolean(L, done);
   return 3;
 }
 
@@ -270,8 +270,8 @@ static int uvm_sl_ml_request_peek(lua_State * L) {
     lua_pushnumber(L, 0);
     lua_settable(L, top);
   };
-  lua_pushboolean(L, done);
   lua_pushnumber(L, disable);
+  lua_pushboolean(L, done);
   return 3;
 }
 
@@ -389,8 +389,8 @@ static int uvm_sl_ml_request_transport(lua_State * L) {
     lua_pushnumber(L, 0);
     lua_settable(L, top);
   };
-  lua_pushboolean(L, done);
   lua_pushnumber(L, disable);
+  lua_pushboolean(L, done);
   return 3;
 }
 
@@ -541,8 +541,8 @@ static int uvm_sl_ml_tlm2_request_b_transport(lua_State * L) {
     lua_settable(L, top);
   };
   lua_pushnumber(L, delay);
-  lua_pushboolean(L, done);
   lua_pushnumber(L, disable);
+  lua_pushboolean(L, done);
   free(stream);
   return 4;
 }
@@ -552,11 +552,9 @@ static int uvm_sl_ml_tlm2_b_transport_response(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  int stream_size = 0;
-  // FIXME: have to use max size of stream, or will result into memory problem
+  int stream_size = PACK_MAX_SIZE;
   unsigned stream[PACK_MAX_SIZE];
   memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
-  //assert(stream);
   BP(b_transport_tlm2_response)(
     framework_id,
     id,
@@ -1297,7 +1295,7 @@ static int tlm2_b_transport_response(
     unsigned * stream_size,
     uvm_ml_stream_t * stream
 ) {
-  lua_getglobal(L, "uvm_sl_ml_tlm2_transport_response_callback");
+  lua_getglobal(L, "uvm_sl_ml_tlm2_b_transport_response_callback");
   lua_pushnumber(L, connector_id);
   lua_pushnumber(L, call_id);
   lua_pushnumber(L, call_id);
@@ -1310,7 +1308,7 @@ static int tlm2_b_transport_response(
   lua_pushnil(L);
   for(; i <= *stream_size; i++) {
     lua_next(L, -2);
-    *stream[i-1] = luaL_checkinteger(L, -1);
+    (*stream)[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 2);
@@ -1336,7 +1334,7 @@ static uvm_ml_tlm_sync_enum tlm2_nb_transport_fw(
   int i = 1;
   for(; i <= *stream_size; i++) {
     lua_pushnumber(L, i);
-    lua_pushnumber(L, *stream[i-1]);
+    lua_pushnumber(L, (*stream)[i-1]);
     lua_settable(L, top);
   };
   lua_pushnumber(L, (int)(*phase));
@@ -1356,7 +1354,7 @@ static uvm_ml_tlm_sync_enum tlm2_nb_transport_fw(
   lua_pushnil(L);
   for(; i <= *stream_size; i++) {
     lua_next(L, -2);
-    *stream[i-1] = luaL_checkinteger(L, -1);
+    (*stream)[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 2);
@@ -1382,7 +1380,7 @@ static uvm_ml_tlm_sync_enum tlm2_nb_transport_bw(
   int i = 1;
   for(; i <= *stream_size; i++) {
     lua_pushnumber(L, i);
-    lua_pushnumber(L, *stream[i-1]);
+    lua_pushnumber(L, (*stream)[i-1]);
     lua_settable(L, top);
   };
   lua_pushnumber(L, (int)(*phase));
@@ -1402,7 +1400,7 @@ static uvm_ml_tlm_sync_enum tlm2_nb_transport_bw(
   lua_pushnil(L);
   for(; i <= *stream_size; i++) {
     lua_next(L, -2);
-    *stream[i-1] = luaL_checkinteger(L, -1);
+    (*stream)[i-1] = luaL_checkinteger(L, -1);
     lua_pop(L, 1);
   };
   lua_pop(L, 2);
@@ -1423,7 +1421,7 @@ static unsigned tlm2_transport_dbg(
   int i = 1;
   for(; i <= *stream_size; i++) {
     lua_pushnumber(L, i);
-    lua_pushnumber(L, *stream[i-1]);
+    lua_pushnumber(L, (*stream)[i-1]);
     lua_settable(L, top);
   };
   if (lua_pcall(L, 2, 0, lua_stack_base) != 0)
