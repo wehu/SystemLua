@@ -241,20 +241,116 @@ TLM_BYTE_ENABLE_ERROR_RESPONSE = -5
 function generic_payload()
   local gp = transaction()
   gp.type = "generic_payload"
-  gp.command = 0
-  --gp.address = 0
-  --
+  gp.address = 0
+  gp.command = UVM_TLM_IGNORE_COMMAND
+  gp.data = {}
+  gp.response_status = TLM_INCOMPLETE_RESPONSE
+  gp.dmi = false
+  gp.byte_enable = {}
+  gp.streaming_width = 0
+  gp.extensions = {}
   return gp
 end
 
+local b8 = 2^8
+local b16 = 2^16
+local b24 = 2^24
+local b32 = 2^32
+
 ml_register_packer("generic_payload", function(packet, gp)
+  -- little endian
+  table.insert(packet, gp.address%b32)
+  table.insert(packet, math.floor(gp.address/b32))
   table.insert(packet, gp.command)
+  table.insert(packet, table.getn(gp.data))
+  local d = 0
+  for i, v in ipairs(gp.data) do
+    d = d * b8 + v
+    if i % 4 == 0 then
+      table.insert(packet, d)
+      d = 0
+    end
+  end
+  if d ~= 0 then
+    table.insert(packet, d)
+  end
+  table.insert(packet, gp.response_status)
+  --table.insert(packet, gp.dmi)
+  table.insert(packet, table.getn(gp.byte_enable))
+  d = 0
+  for i, v in ipairs(gp.byte_enable) do
+    d = d * b8 + v
+    if i % 4 == 0 then
+      table.insert(packet, d)
+      d = 0
+    end
+  end
+  if d ~= 0 then
+    table.insert(packet, d)
+  end
+  table.insert(packet, gp.streaming_width)
+  table.insert(packet, table.getn(gp.extensions))
+  for i, v in ipairs(gp.extensions) do
+    local p = ml_pack(v)
+    for ni, nv in ipairs(p) do
+      table.insert(packet, nv)
+    end
+  end
   return packet
 end)
 
 ml_register_unpacker("generic_payload", function(packet)
   local gp = generic_payload()
-  gp.command = packet[3]
+  -- copy pakcet first???
+  if packet[1] == 0 then
+    return nil
+  end
+  table.remove(packet, 1)
+  table.remove(packet, 1)
+  gp.address = packet[1] + packet[2] * b32
+  table.remove(packet, 1)
+  table.remove(packet, 1) 
+  gp.command = packet[1]
+  table.remove(packet, 1)
+  local dl = packet[1]
+  table.remove(packet, 1)
+  for i = 1, dl-1, 4 do
+    table.insert(gp.data, packet[1]%b8)
+    if dl - i == 3 then
+      table.insert(gp.data, math.floor((packet[1]%b16)/b8))
+    end
+    if dl - i == 2 then
+      table.insert(gp.data, math.floor((packet[1]%b24)/b16))
+    end
+    if dl - i == 1 then
+      table.insert(gp.data, math.floor(packet[1]/b24))
+    end
+    table.remove(packet, 1)
+  end
+  gp.response_status = packet[1]
+  table.remove(packet, 1)
+  local el = packet[1]
+  table.remove(packet, 1)
+  for i = 1, el-1, 4 do
+    table.insert(gp.byte_enable, packet[1]%b8)
+    if el - i == 3 then
+      table.insert(gp.byte_enable, math.floor((packet[1]%b16)/b8))
+    end
+    if el - i == 2 then
+      table.insert(gp.byte_enable, math.floor((packet[1]%b24)/b16))
+    end
+    if el - i == 1 then
+      table.insert(gp.byte_enable, math.floor(packet[1]/b24))
+    end
+    table.remove(packet, 1)
+  end
+  gp.streaming_width = packet[1]
+  table.remove(packet, 1)
+  el = packet[1]
+  table.remove(packet, 1)
+  for i = 1,el do
+    table.insert(gp.extensions, ml_unpack(packet))
+  end
   return gp
 end)
 
