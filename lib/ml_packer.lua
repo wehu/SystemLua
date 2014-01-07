@@ -119,7 +119,11 @@ ml_register_packer("number", function(packet, data)
 end)
 
 ml_register_unpacker("number", function(packet)
-  return packet[3]
+  table.remove(packet, 1)
+  table.remove(packet, 1)
+  local data = packet[1]
+  table.remove(packet, 1)
+  return data
 end)
 
 ml_set_packet_size("number", 1)
