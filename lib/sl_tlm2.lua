@@ -308,33 +308,35 @@ ml_register_packer("uvm_tlm_generic_payload", function(packet, gp)
   pack_int(gp.command, packet)
   local dl = table.getn(gp.data)
   pack_int(dl, packet)
-  local d = 0
+  --local d = 0
   for i, v in ipairs(gp.data) do
-    d = d * b8 + v
-    if i % 4 == 0 then
-      pack_int(d, packet)
-      d = 0
-    end
+  --  d = d * b8 + v
+  --  if i % 4 == 0 then
+  --    pack_int(d, packet)
+    pack_int(v, packet)
+  --    d = 0
+  --  end
   end
-  if dl % 4 ~= 0 then
-    pack_int(d, packet)
-  end
+  --if dl % 4 ~= 0 then
+  --  pack_int(d, packet)
+  --end
   pack_int(gp.length, packet)
   pack_int(gp.response_status, packet)
   pack_int(0, packet)
-  pack_int(table.getn(gp.byte_enable), packet)
   dl = table.getn(gp.byte_enable)
-  d = 0
+  pack_int(dl, packet)
+  --d = 0
   for i, v in ipairs(gp.byte_enable) do
-    d = d * b8 + v
-    if i % 4 == 0 then
-      pack_int(d, packet)
-      d = 0
-    end
+    --d = d * b8 + v
+    --if i % 4 == 0 then
+    --  pack_int(d, packet)
+    pack_int(v, packet)
+    --  d = 0
+    --end
   end
-  if dl % 4 ~= 0 then
-    pack_int(d, packet)
-  end
+  --if dl % 4 ~= 0 then
+  --  pack_int(d, packet)
+  --end
   pack_int(gp.byte_enable_length, packet)
   pack_int(gp.streaming_width, packet)
   pack_int(table.getn(gp.extensions), packet)
@@ -355,35 +357,35 @@ ml_register_unpacker("uvm_tlm_generic_payload", function(packet)
   gp.address = unpack_int(packet, 64)
   gp.command = unpack_int(packet)
   local dl = unpack_int(packet)
-  for i = 1, dl, 4 do
+  for i = 1, dl do
     local d = unpack_int(packet)
-    table.insert(gp.data, d%b8)
-    if dl - i == 3 then
-      table.insert(gp.data, math.floor((d%b16)/b8))
-    end
-    if dl - i == 2 then
-      table.insert(gp.data, math.floor((d%b24)/b16))
-    end
-    if dl - i == 1 then
-      table.insert(gp.data, math.floor(d/b24))
-    end
+    table.insert(gp.data, d) --d%b8)
+    --if dl - i == 3 then
+    --  table.insert(gp.data, math.floor((d%b16)/b8))
+    --end
+    --if dl - i == 2 then
+    --  table.insert(gp.data, math.floor((d%b24)/b16))
+    --end
+    --if dl - i == 1 then
+    --  table.insert(gp.data, math.floor(d/b24))
+    --end
   end
   gp.length = unpack_int(packet)
   gp.response_status = unpack_int(packet)
   unpack_int(packet)
   local el = unpack_int(packet)
-  for i = 1, el, 4 do
+  for i = 1, el do
     local d = unpack_int(packet)
-    table.insert(gp.byte_enable, d%b8)
-    if el - i == 3 then
-      table.insert(gp.byte_enable, math.floor((d%b16)/b8))
-    end
-    if el - i == 2 then
-      table.insert(gp.byte_enable, math.floor((d%b24)/b16))
-    end
-    if el - i == 1 then
-      table.insert(gp.byte_enable, math.floor(d/b24))
-    end
+    table.insert(gp.byte_enable, d) --d%b8)
+    --if el - i == 3 then
+    --  table.insert(gp.byte_enable, math.floor((d%b16)/b8))
+    --end
+    --if el - i == 2 then
+    --  table.insert(gp.byte_enable, math.floor((d%b24)/b16))
+    --end
+    --if el - i == 1 then
+    --  table.insert(gp.byte_enable, math.floor(d/b24))
+    --end
   end
   gp.byte_enable_length = unpack_int(packet)
   gp.streaming_width = unpack_int(packet)
