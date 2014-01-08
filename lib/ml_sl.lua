@@ -206,9 +206,10 @@ local function create_connector(p)
   elseif p.type == "TLM2" and p.type2 == "tlm2_blocking_transport" then
   elseif p.type == "TLM2" and p.type2 == "tlm2_nonblocking_transport" and not p.is_target then
     function c:nb_transport_fw(trans, phase, delay)
+      local trans_id = uvm_sl_ml_assign_transaction_id()
       --call_phases[trans.id] = phase
       --call_delays[trans.id] = delay
-      local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_fw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_fw(p.id, trans_id, ml_pack(trans), phase.value, delay.value)
       ml_set_packet_type(ntrans, trans)
       ntrans = ml_unpack(ntrans)
       for k, v in pairs(ntrans) do
@@ -220,9 +221,10 @@ local function create_connector(p)
     end
   elseif p.type == "TLM2" and p.type2 == "tlm2_nonblocking_transport" and p.is_target then
     function c:nb_transport_bw(trans, phase, delay)
+      local trans_id = uvm_sl_ml_assign_transaction_id()
       --call_phases[trans.id] = phase
       --call_delays[trans.id] = delay
-      local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_bw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_bw(p.id, trans_id, ml_pack(trans), phase.value, delay.value)
       ml_set_packet_type(ntrans, trans)
       ntrans = ml_unpack(ntrans)
       for k, v in pairs(ntrans) do

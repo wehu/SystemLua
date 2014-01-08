@@ -306,7 +306,8 @@ ml_register_packer("uvm_tlm_generic_payload", function(packet, gp)
   -- little endian
   pack_int(gp.address, packet, 64)
   pack_int(gp.command, packet)
-  pack_int(table.getn(gp.data), packet)
+  local dl = table.getn(gp.data)
+  pack_int(dl, packet)
   local d = 0
   for i, v in ipairs(gp.data) do
     d = d * b8 + v
@@ -315,23 +316,24 @@ ml_register_packer("uvm_tlm_generic_payload", function(packet, gp)
       d = 0
     end
   end
-  if d ~= 0 then
+  if dl % 4 ~= 0 then
     pack_int(d, packet)
   end
   pack_int(gp.length, packet)
   pack_int(gp.response_status, packet)
   pack_int(0, packet)
   pack_int(table.getn(gp.byte_enable), packet)
+  dl = table.getn(gp.byte_enable)
   d = 0
   for i, v in ipairs(gp.byte_enable) do
     d = d * b8 + v
     if i % 4 == 0 then
-      ml_pack(d, packet)
+      pack_int(d, packet)
       d = 0
     end
   end
-  if d ~= 0 then
-    ml_pack(d, packet)
+  if dl % 4 ~= 0 then
+    pack_int(d, packet)
   end
   pack_int(gp.byte_enable_length, packet)
   pack_int(gp.streaming_width, packet)
