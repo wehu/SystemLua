@@ -52,9 +52,11 @@ function ml_set_packet_size(typ, size)
   packers[typ].sl_size = size + 2
 end
 
-function ml_pack(data)
+function ml_pack(data, packet)
   local typ = type(data)
-  local packet = {}
+  if not packet then
+    packet = {}
+  end
   if typ == "table" and data.type then
     typ = data.type
   end
@@ -126,4 +128,16 @@ ml_register_unpacker("number", function(packet)
   return data
 end)
 
-ml_set_packet_size("number", 1)
+ml_register_packer("integral", function(packet, data)
+  table.insert(packet, data)
+  return packet
+end)
+
+ml_register_unpacker("integral", function(packet)
+  table.remove(packet, 1)
+  table.remove(packet, 1)
+  local data = packet[1]
+  table.remove(packet, 1)
+  return data
+end)
+

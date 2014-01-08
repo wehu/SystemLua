@@ -628,7 +628,7 @@ static int uvm_sl_ml_tlm2_nb_transport_bw(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   int trans_id = luaL_checknumber(L, 2);
   int stream_size = luaL_getn(L, 3);
-  uvm_ml_tlm_phase phase = (uvm_ml_tlm_phase)LuaL_checknumber(L, 4);
+  uvm_ml_tlm_phase phase = (uvm_ml_tlm_phase)luaL_checknumber(L, 4);
   double delay = luaL_checknumber(L, 5);
   unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
   assert(stream);

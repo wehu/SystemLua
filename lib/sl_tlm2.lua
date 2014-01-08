@@ -240,7 +240,7 @@ TLM_BYTE_ENABLE_ERROR_RESPONSE = -5
 
 function generic_payload()
   local gp = transaction()
-  gp.type = "generic_payload"
+  gp.type = "uvm_tlm_generic_payload"
   gp.address = 0
   gp.command = UVM_TLM_IGNORE_COMMAND
   gp.data = {}
@@ -257,49 +257,46 @@ local b16 = 2^16
 local b24 = 2^24
 local b32 = 2^32
 
-ml_register_packer("generic_payload", function(packet, gp)
+ml_register_packer("uvm_tlm_generic_payload", function(packet, gp)
   -- little endian
-  table.insert(packet, gp.address%b32)
-  table.insert(packet, math.floor(gp.address/b32))
-  table.insert(packet, gp.command)
-  table.insert(packet, table.getn(gp.data))
+  ml_pack(gp.address%b32, packet)
+  ml_pack(math.floor(gp.address/b32), packet)
+  ml_pack(gp.command, packet)
+  ml_pack(table.getn(gp.data), packet)
   local d = 0
   for i, v in ipairs(gp.data) do
     d = d * b8 + v
     if i % 4 == 0 then
-      table.insert(packet, d)
+      ml_pack(d, packet)
       d = 0
     end
   end
   if d ~= 0 then
-    table.insert(packet, d)
+    ml_pack(d, packet)
   end
-  table.insert(packet, gp.response_status)
+  ml_pack(gp.response_status, packet)
   --table.insert(packet, gp.dmi)
-  table.insert(packet, table.getn(gp.byte_enable))
+  ml_pack(table.getn(gp.byte_enable), packet)
   d = 0
   for i, v in ipairs(gp.byte_enable) do
     d = d * b8 + v
     if i % 4 == 0 then
-      table.insert(packet, d)
+      ml_pack(d, packet)
       d = 0
     end
   end
   if d ~= 0 then
-    table.insert(packet, d)
+    ml_pack(d, packet)
   end
-  table.insert(packet, gp.streaming_width)
-  table.insert(packet, table.getn(gp.extensions))
+  ml_pack(gp.streaming_width, packet)
+  ml_pack(table.getn(gp.extensions), packet)
   for i, v in ipairs(gp.extensions) do
-    local p = ml_pack(v)
-    for ni, nv in ipairs(p) do
-      table.insert(packet, nv)
-    end
+    ml_pack(v, packet)
   end
   return packet
 end)
 
-ml_register_unpacker("generic_payload", function(packet)
+ml_register_unpacker("uvm_tlm_generic_payload", function(packet)
   local gp = generic_payload()
   -- copy pakcet first???
   if packet[1] == 0 then
@@ -307,47 +304,40 @@ ml_register_unpacker("generic_payload", function(packet)
   end
   table.remove(packet, 1)
   table.remove(packet, 1)
-  gp.address = packet[1] + packet[2] * b32
-  table.remove(packet, 1)
-  table.remove(packet, 1) 
-  gp.command = packet[1]
-  table.remove(packet, 1)
-  local dl = packet[1]
-  table.remove(packet, 1)
+  gp.address = ml_unpack(packet) + ml_unpack(packet) * b32
+  gp.command = ml_unpack(packet)
+  local dl = ml_unpack(packet)
   for i = 1, dl-1, 4 do
-    table.insert(gp.data, packet[1]%b8)
+    local d = ml_unpack(packet)
+    table.insert(gp.data, d%b8)
     if dl - i == 3 then
-      table.insert(gp.data, math.floor((packet[1]%b16)/b8))
+      table.insert(gp.data, math.floor((d%b16)/b8))
     end
     if dl - i == 2 then
-      table.insert(gp.data, math.floor((packet[1]%b24)/b16))
+      table.insert(gp.data, math.floor((d%b24)/b16))
     end
     if dl - i == 1 then
-      table.insert(gp.data, math.floor(packet[1]/b24))
+      table.insert(gp.data, math.floor(d/b24))
     end
-    table.remove(packet, 1)
   end
-  gp.response_status = packet[1]
-  table.remove(packet, 1)
-  local el = packet[1]
-  table.remove(packet, 1)
+  gp.response_status = ml_unpack(packet)
+  local el = ml_unpack(packet)
   for i = 1, el-1, 4 do
-    table.insert(gp.byte_enable, packet[1]%b8)
+    local d = ml_unpack(packet)
+    table.insert(gp.byte_enable, d%b8)
     if el - i == 3 then
-      table.insert(gp.byte_enable, math.floor((packet[1]%b16)/b8))
+      table.insert(gp.byte_enable, math.floor((d%b16)/b8))
     end
     if el - i == 2 then
-      table.insert(gp.byte_enable, math.floor((packet[1]%b24)/b16))
+      table.insert(gp.byte_enable, math.floor((d%b24)/b16))
     end
     if el - i == 1 then
-      table.insert(gp.byte_enable, math.floor(packet[1]/b24))
+      table.insert(gp.byte_enable, math.floor(d/b24))
     end
     table.remove(packet, 1)
   end
-  gp.streaming_width = packet[1]
-  table.remove(packet, 1)
-  el = packet[1]
-  table.remove(packet, 1)
+  gp.streaming_width = ml_unpack(packet)
+  el = ml_unpack(packet)
   for i = 1,el do
     table.insert(gp.extensions, ml_unpack(packet))
   end
