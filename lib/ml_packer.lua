@@ -52,10 +52,23 @@ function ml_set_packet_size(typ, size)
   packers[typ].sl_size = size + 2
 end
 
-function ml_pack(data, packet)
+function ml_set_packet_type(packet, data)
+  sl_checktype(packet, "table")
+  local typ = type(data)
+  if typ == "table" and data.type then
+    typ = data.type
+  end
+  local id = uvm_sl_ml_get_type_id(typ)
+  packet[2] = id
+end
+
+function ml_pack(data, packet, size)
   local typ = type(data)
   if not packet then
     packet = {}
+  end
+  if not size then
+    size = 1
   end
   if typ == "table" and data.type then
     typ = data.type
@@ -66,7 +79,7 @@ function ml_pack(data, packet)
     local id = uvm_sl_ml_get_type_id(typ)
     table.insert(packet, 1)
     table.insert(packet, id)
-    packers[typ].sl_pack(packet, data)
+    packers[typ].sl_pack(packet, data, size)
     --id = uvm_sl_ml_get_type_id("unsigned")
     --table.insert(packet, id)
     --table.insert(packet, data)
@@ -76,15 +89,18 @@ function ml_pack(data, packet)
   return packet
 end
 
-function ml_unpack(packet)
+function ml_unpack(packet, size)
   if packet[1] == 0 then
     return nil
+  end
+  if not size then
+    size = 0
   end
   local id =  packet[2]
   local typ = uvm_sl_ml_get_type_name(id)
   local data = nil
   if packers[typ] and packers[typ].sl_unpack then
-    data = packers[typ].sl_unpack(packet)
+    data = packers[typ].sl_unpack(packet, size)
   else
     err("unsupported packed data type "..typ)
   end
@@ -115,29 +131,30 @@ function uvm_sl_ml_check_type_size(id, size)
 end
 --]]
 
-ml_register_packer("number", function(packet, data)
-  table.insert(packet, data)
+local b32 = 2^32
+
+ml_register_packer("number", function(packet, data, size)
+  if size == 64 then
+    table.insert(packet, data%b32)
+    table.insert(packet, math.floor(data/b32))
+  else
+    table.insert(packet, data)
+  end
   return packet
 end)
 
-ml_register_unpacker("number", function(packet)
+ml_register_unpacker("number", function(packet, size)
   table.remove(packet, 1)
   table.remove(packet, 1)
-  local data = packet[1]
-  table.remove(packet, 1)
-  return data
-end)
-
-ml_register_packer("integral", function(packet, data)
-  table.insert(packet, data)
-  return packet
-end)
-
-ml_register_unpacker("integral", function(packet)
-  table.remove(packet, 1)
-  table.remove(packet, 1)
-  local data = packet[1]
-  table.remove(packet, 1)
+  local data = 0
+  if size == 64 then
+    data = packet[1] + packet[2] * b32
+    table.remove(packet, 1)
+    table.remove(packet, 1)
+  else
+    data = packet[1]
+    table.remove(packet, 1)
+  end
   return data
 end)
 

@@ -185,6 +185,7 @@ local function create_connector(p)
       --callbacks[callback_id] = cb
       local ntrans, ndelay, disable, done = uvm_sl_ml_tlm2_request_b_transport(p.id, call_id, callback_id, ml_pack(trans), delay.value)
       if done then
+        ml_set_packet_type(ntrans, trans)
         ntrans = ml_unpack(ntrans)
         for k, v in pairs(ntrans) do
           trans[k] = v
@@ -194,6 +195,7 @@ local function create_connector(p)
       else
         sl_scheduler:sleep()
         local ntrans, ndelay = uvm_sl_ml_tlm2_b_transport_response(p.id, call_id, callback_id)
+        ml_set_packet_type(ntrans, trans)
         ntrans = ml_unpack(ntrans)
         for k, v in pairs(ntrans) do
           trans[k] = v
@@ -220,6 +222,7 @@ local function create_connector(p)
       --call_phases[trans.id] = phase
       --call_delays[trans.id] = delay
       local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_bw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      ml_set_packet_type(ntrans, trans)
       ntrans = ml_unpack(ntrans)
       for k, v in pairs(ntrans) do
         trans[k] = v
