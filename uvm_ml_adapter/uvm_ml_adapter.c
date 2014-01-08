@@ -739,6 +739,12 @@ static int uvm_sl_ml_notify_tree_phase(lua_State * L) {
   return 0;
 }
 
+static int uvm_sl_ml_assign_transaction_id (lua_State * L) {
+  int id = BP(assign_transaction_id)(framework_id);
+  lua_pushnumber(L, id);
+  return 1;
+}
+
 // required apis
 
 static void set_debug_mode(int mode) {
@@ -821,12 +827,14 @@ static void startup() {
   lua_pushcfunction(L, uvm_sl_ml_get_type_name);
   lua_setglobal(L, "uvm_sl_ml_get_type_name");
 
-
   lua_pushcfunction(L, uvm_sl_ml_create_component_proxy);
   lua_setglobal(L, "uvm_sl_ml_create_component_proxy");
 
   lua_pushcfunction(L, uvm_sl_ml_notify_tree_phase);
   lua_setglobal(L, "uvm_sl_ml_notify_tree_phase");
+
+  lua_pushcfunction(L, uvm_sl_ml_assign_transaction_id);
+  lua_setglobal(L, "uvm_sl_ml_assign_transaction_id");
 
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)

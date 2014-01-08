@@ -246,12 +246,32 @@ function generic_payload()
   gp.data = {}
   gp.length = 0
   gp.response_status = TLM_INCOMPLETE_RESPONSE
-  gp.dmi = false
+  gp.dmi = 0
   gp.byte_enable = {}
   gp.byte_enable_length = 0
   gp.streaming_width = 0
   gp.extensions = {}
   return gp
+end
+
+function print_gp(gp)
+  print("type: "..gp.type)
+  print("address: "..gp.address)
+  print("command: "..gp.command)
+  print("data: ")
+  for i, v in ipairs(gp.data) do
+    print("  "..v)
+  end
+  print("length: "..gp.length)
+  print("response_status: "..gp.response_status)
+  print("dmi: "..gp.dmi)
+  print("byte_enable: ")
+  for i, v in ipairs(gp.byte_enable) do
+    print("  "..v)
+  end
+  print("byte_enable_length: "..gp.byte_enable_length)
+  print("streaming_width: "..gp.streaming_width)
+  print("extension size: "..table.getn(gp.extensions))
 end
 
 local b8 = 2^8
@@ -333,7 +353,7 @@ ml_register_unpacker("uvm_tlm_generic_payload", function(packet)
   gp.address = unpack_int(packet, 64)
   gp.command = unpack_int(packet)
   local dl = unpack_int(packet)
-  for i = 1, dl-1, 4 do
+  for i = 1, dl, 4 do
     local d = unpack_int(packet)
     table.insert(gp.data, d%b8)
     if dl - i == 3 then
@@ -350,7 +370,7 @@ ml_register_unpacker("uvm_tlm_generic_payload", function(packet)
   gp.response_status = unpack_int(packet)
   unpack_int(packet)
   local el = unpack_int(packet)
-  for i = 1, el-1, 4 do
+  for i = 1, el, 4 do
     local d = unpack_int(packet)
     table.insert(gp.byte_enable, d%b8)
     if el - i == 3 then

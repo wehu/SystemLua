@@ -42,8 +42,8 @@ local function create_connector(p)
   local c = {}
   if p.type == "tlm_blocking_put" and not p.is_export then
     function c:put(data)
-      call_id = call_id + 1
-      callback_id = callback_id + 1
+      call_id = uvm_sl_ml_assign_transaction_id()
+      callback_id = call_id
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -72,8 +72,8 @@ local function create_connector(p)
   elseif p.type == "tlm_nonblocking_put" then
   elseif p.type == "tlm_blocking_get" and not p.is_export then
     function c:get()
-      call_id = call_id + 1
-      callback_id = callback_id + 1
+      call_id = uvm_sl_ml_assign_transaction_id()
+      callback_id = call_id
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -106,8 +106,8 @@ local function create_connector(p)
   elseif p.type == "tlm_nonblocking_get" then
   elseif p.type == "tlm_blocking_peek" and not p.is_export then
     function c:peek()
-      call_id = call_id + 1
-      callback_id = callback_id + 1
+      call_id = uvm_sl_ml_assign_transaction_id()
+      callback_id = call_id
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -140,8 +140,8 @@ local function create_connector(p)
   elseif p.type == "tlm_nonblocking_peek" then
   elseif p.type == "tlm_blocking_transport" and not p.is_export then
     function c:transport(data)
-      call_id = call_id + 1
-      callback_id = callback_id + 1
+      call_id = uvm_sl_ml_assign_transaction_id()
+      callback_id = call_id
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -172,8 +172,8 @@ local function create_connector(p)
   elseif p.type == "tlm_nonblocking_transport" then
   elseif p.type == "TLM2" and p.type2 == "tlm2_blocking_transport" and not p.is_target then
     function c:b_transport(trans, delay)
-      call_id = call_id + 1
-      callback_id = callback_id + 1
+      call_id = uvm_sl_ml_assign_transaction_id()
+      callback_id = call_id
       local th = sl_scheduler.current
       sl_checktype(th, "thread")
       local cb = function(call_id, callback_id)
@@ -209,6 +209,7 @@ local function create_connector(p)
       --call_phases[trans.id] = phase
       --call_delays[trans.id] = delay
       local ntrans, nphase, ndelay, res = uvm_sl_ml_tlm2_nb_transport_fw(p.id, trans.id, ml_pack(trans), phase.value, delay.value)
+      ml_set_packet_type(ntrans, trans)
       ntrans = ml_unpack(ntrans)
       for k, v in pairs(ntrans) do
         trans[k] = v
