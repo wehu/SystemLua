@@ -242,7 +242,7 @@ function generic_payload()
   local gp = transaction()
   gp.type = "uvm_tlm_generic_payload"
   gp.address = 0
-  gp.command = UVM_TLM_IGNORE_COMMAND
+  gp.command = TLM_IGNORE_COMMAND
   gp.data = {}
   gp.length = 0
   gp.response_status = TLM_INCOMPLETE_RESPONSE
@@ -257,13 +257,37 @@ end
 function print_gp(gp)
   print("type: "..gp.type)
   print("address: "..gp.address)
-  print("command: "..gp.command)
+  if gp.command == 0 then
+    print("command: TLM_READ_COMMAND")
+  elseif gp.command == 1 then
+    print("command: TLM_WRITE_COMMAND")
+  elseif gp.command == 2 then
+    print("command: TLM_IGNORE_COMMAND")
+  else
+    print("command: "..gp.command)
+  end
   print("data: ")
   for i, v in ipairs(gp.data) do
     print("  "..v)
   end
   print("length: "..gp.length)
-  print("response_status: "..gp.response_status)
+  if gp.response_status == 1 then
+    print("response_status: TLM_OK_RESPONSE")
+  elseif gp.response_status == 0 then
+    print("response_status: TLM_INCOMPLETE_RESPONSE")
+  elseif gp.response_status == -1 then
+    print("response_status: TLM_GENERIC_ERROR_RESPONSE")
+  elseif gp.response_status == -2 then
+    print("response_status: TLM_ADDRESS_ERROR_RESPONSE")
+  elseif gp.response_status == -3 then
+    print("response_status: TLM_COMMAND_ERROR_RESPONSE")
+  elseif gp.response_status == -4 then
+    print("response_status: TLM_BURST_ERROR_RESPONSE")
+  elseif gp.response_status == -5 then
+    print("response_status: TLM_BYTE_ENABLE_ERROR_RESPONSE")
+  else
+    print("response_status: "..gp.response_status)
+  end
   print("dmi: "..gp.dmi)
   print("byte_enable: ")
   for i, v in ipairs(gp.byte_enable) do

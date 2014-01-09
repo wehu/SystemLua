@@ -429,3 +429,23 @@ function uvm_sl_ml_tlm2_transport_dbg_callback(id, packet)
   local p = find_port_by_id(id)
   return p:transport_dbg(ml_unpack(packet))
 end
+
+function ml_set_trace_mode(mode)
+  if not mode then
+    mode = 1
+  end
+  sl_checktype(mode, "number")
+  uvm_sl_ml_set_trace_mode(mode)
+end
+
+function ml_set_match_types(type1, type2)
+  sl_checktype(type1, "string")
+  sl_checktype(type2, "string")
+  local res = uvm_sl_ml_set_match_types(type1, type2)
+  if res == 0 then
+    err("ml_set_match_types: "..type1.." and "..type2.." failed")
+  end
+end
+
+ml_set_match_types("SL:uvm_tlm_generic_payload", "SC:tlm_generic_payload")
+ml_set_match_types("SL:uvm_tlm_generic_payload", "SV:uvm_tlm_generic_payload")

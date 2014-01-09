@@ -745,6 +745,20 @@ static int uvm_sl_ml_assign_transaction_id (lua_State * L) {
   return 1;
 }
 
+static int uvm_sl_ml_set_trace_mode(lua_State * L) {
+  int mode = luaL_checknumber(L, 1);
+  BP(set_trace_mode)(mode);
+  return 0;
+}
+
+static int uvm_sl_ml_set_match_types(lua_State * L) {
+  const char * type1 = luaL_checkstring(L, 1);
+  const char * type2 = luaL_checkstring(L, 2);
+  int res = BP(set_match_types)(framework_id, type1, type2);
+  lua_pushnumber(L, res);
+  return 1;
+}
+
 // required apis
 
 static void set_debug_mode(int mode) {
@@ -835,6 +849,12 @@ static void startup() {
 
   lua_pushcfunction(L, uvm_sl_ml_assign_transaction_id);
   lua_setglobal(L, "uvm_sl_ml_assign_transaction_id");
+
+  lua_pushcfunction(L, uvm_sl_ml_set_trace_mode);
+  lua_setglobal(L, "uvm_sl_ml_set_trace_mode");
+
+  lua_pushcfunction(L, uvm_sl_ml_set_match_types);
+  lua_setglobal(L, "uvm_sl_ml_set_match_types");
 
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
