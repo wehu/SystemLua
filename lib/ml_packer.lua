@@ -62,24 +62,26 @@ function ml_set_packet_type(packet, data)
   packet[2] = id
 end
 
-function ml_pack(data, packet, size)
+function ml_pack(data, packet, nonnull)
   local typ = type(data)
   if not packet then
     packet = {}
   end
-  if not size then
-    size = 1
-  end
   if typ == "table" and data.type then
     typ = data.type
+  end
+  if nonnull and typ == "nil" then
+    err("a nil is packed")
   end
   if typ == "nil" then
     table.insert(packet, 0)
   elseif packers[typ] and packers[typ].sl_pack then
     local id = uvm_sl_ml_get_type_id(typ)
-    table.insert(packet, 1)
+    if not nonnull then
+      table.insert(packet, 1)
+    end
     table.insert(packet, id)
-    packers[typ].sl_pack(packet, data, size)
+    packers[typ].sl_pack(packet, data)
     --id = uvm_sl_ml_get_type_id("unsigned")
     --table.insert(packet, id)
     --table.insert(packet, data)
@@ -89,18 +91,18 @@ function ml_pack(data, packet, size)
   return packet
 end
 
-function ml_unpack(packet, size)
-  if packet[1] == 0 then
+function ml_unpack(packet, nonnull)
+  if packet[1] == 0 and not nonnull then
     return nil
   end
-  if not size then
-    size = 0
+  if not nonnull then
+    table.remove(packet, 1)
   end
-  local id =  packet[2]
+  local id =  packet[1]
   local typ = uvm_sl_ml_get_type_name(id)
   local data = nil
   if packers[typ] and packers[typ].sl_unpack then
-    data = packers[typ].sl_unpack(packet, size)
+    data = packers[typ].sl_unpack(packet)
   else
     err("unsupported packed data type "..typ)
   end
@@ -133,28 +135,15 @@ end
 
 local b32 = 2^32
 
-ml_register_packer("number", function(packet, data, size)
-  if size == 64 then
-    table.insert(packet, data%b32)
-    table.insert(packet, math.floor(data/b32))
-  else
-    table.insert(packet, data)
-  end
+ml_register_packer("number", function(packet, data)
+  table.insert(packet, data)
   return packet
 end)
 
-ml_register_unpacker("number", function(packet, size)
-  table.remove(packet, 1)
-  table.remove(packet, 1)
+ml_register_unpacker("number", function(packet)
   local data = 0
-  if size == 64 then
-    data = packet[1] + packet[2] * b32
-    table.remove(packet, 1)
-    table.remove(packet, 1)
-  else
-    data = packet[1]
-    table.remove(packet, 1)
-  end
+  data = packet[1]
+  table.remove(packet, 1)
   return data
 end)
 
