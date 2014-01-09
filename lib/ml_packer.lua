@@ -99,6 +99,7 @@ function ml_unpack(packet, nonnull)
     table.remove(packet, 1)
   end
   local id =  packet[1]
+  table.remove(packet, 1)
   local typ = uvm_sl_ml_get_type_name(id)
   local data = nil
   if packers[typ] and packers[typ].sl_unpack then
