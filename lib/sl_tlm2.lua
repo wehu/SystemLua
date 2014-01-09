@@ -244,11 +244,11 @@ function generic_payload()
   gp.address = 0
   gp.command = TLM_IGNORE_COMMAND
   gp.data = {}
-  gp.length = 0
+  --gp.length = 0
   gp.response_status = TLM_INCOMPLETE_RESPONSE
   gp.dmi = 0
   gp.byte_enable = {}
-  gp.byte_enable_length = 0
+  --gp.byte_enable_length = 0
   gp.streaming_width = 0
   gp.extensions = {}
   return gp
@@ -270,7 +270,7 @@ function print_gp(gp)
   for i, v in ipairs(gp.data) do
     print("  "..v)
   end
-  print("length: "..gp.length)
+  print("length: "..table.getn(gp.data))
   if gp.response_status == 1 then
     print("response_status: TLM_OK_RESPONSE")
   elseif gp.response_status == 0 then
@@ -293,7 +293,7 @@ function print_gp(gp)
   for i, v in ipairs(gp.byte_enable) do
     print("  "..v)
   end
-  print("byte_enable_length: "..gp.byte_enable_length)
+  print("byte_enable_length: "..table.getn(gp.byte_enable))
   print("streaming_width: "..gp.streaming_width)
   print("extension size: "..table.getn(gp.extensions))
 end
@@ -330,20 +330,22 @@ ml_register_packer("uvm_tlm_generic_payload", function(packet, gp)
   -- little endian
   pack_int(gp.address, packet, 64)
   pack_int(gp.command, packet)
-  local dl = table.getn(gp.data)
-  pack_int(dl, packet)
+  local l = table.getn(gp.data)
+  pack_int(l, packet)
   for i, v in ipairs(gp.data) do
     pack_int(v, packet)
   end
-  pack_int(gp.length, packet)
+  --pack_int(gp.length, packet)
+  pack_int(l, packet)
   pack_int(gp.response_status, packet)
   pack_int(0, packet)
-  dl = table.getn(gp.byte_enable)
-  pack_int(dl, packet)
+  l = table.getn(gp.byte_enable)
+  pack_int(l, packet)
   for i, v in ipairs(gp.byte_enable) do
     pack_int(v, packet)
   end
-  pack_int(gp.byte_enable_length, packet)
+  --pack_int(gp.byte_enable_length, packet)
+  pack_int(l, packet)
   pack_int(gp.streaming_width, packet)
   pack_int(table.getn(gp.extensions), packet)
   for i, v in ipairs(gp.extensions) do
@@ -356,20 +358,22 @@ ml_register_unpacker("uvm_tlm_generic_payload", function(packet)
   local gp = generic_payload()
   gp.address = unpack_int(packet, 64)
   gp.command = unpack_int(packet)
-  local dl = unpack_int(packet)
-  for i = 1, dl do
+  local l = unpack_int(packet)
+  for i = 1, l do
     local d = unpack_int(packet)
     table.insert(gp.data, d)
   end
-  gp.length = unpack_int(packet)
+  --gp.length =
+  unpack_int(packet)
   gp.response_status = unpack_int(packet)
   unpack_int(packet)
-  local el = unpack_int(packet)
-  for i = 1, el do
+  l = unpack_int(packet)
+  for i = 1, l do
     local d = unpack_int(packet)
     table.insert(gp.byte_enable, d)
   end
-  gp.byte_enable_length = unpack_int(packet)
+  --gp.byte_enable_length =
+  unpack_int(packet)
   gp.streaming_width = unpack_int(packet)
   el = unpack_int(packet)
   for i = 1,el do
