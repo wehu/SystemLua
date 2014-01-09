@@ -43,6 +43,15 @@ static unsigned framework_id = -1;
 static uvm_ml_time_unit m_time_unit = TIME_UNIT_UNDEFINED;
 static double           m_time_value = -1;
 
+static void set_pack_max_size(int size) {
+  BP(set_pack_max_size)(framework_id, size);
+}
+
+static int get_pack_max_size() {
+  return PACK_MAX_SIZE;
+//  return BP(get_pack_max_size)(framework_id);
+}
+
 // provided apis
 static int uvm_sl_ml_connect(lua_State * L) {
   assert (bpProvidedAPI != NULL);
@@ -67,8 +76,8 @@ static int uvm_sl_ml_request_put(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   int stream_size = luaL_getn(L, 4);
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
@@ -100,8 +109,8 @@ static int uvm_sl_ml_nb_put(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   int stream_size = luaL_getn(L, 2);
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
@@ -135,8 +144,8 @@ static int uvm_sl_ml_can_put(lua_State * L) {
 static int uvm_sl_ml_request_get(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int stream_size = 0;
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
@@ -176,8 +185,8 @@ static int uvm_sl_ml_get_requested(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   // FIXME: have to use max size of stream, or will result into memory problem
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   //assert(stream);
   unsigned size = BP(get_requested)(
     framework_id,
@@ -201,8 +210,8 @@ static int uvm_sl_ml_nb_get(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   int stream_size = 0;
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int res = BP(nb_get)(
     framework_id,
     id,
@@ -240,8 +249,8 @@ static int uvm_sl_ml_can_get(lua_State * L) {
 static int uvm_sl_ml_request_peek(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int stream_size = 0;
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
@@ -281,8 +290,8 @@ static int uvm_sl_ml_peek_requested(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   // FIXME: have to use max size of stream, or will result into memory problem
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   unsigned size = BP(peek_requested)(
     framework_id,
     id,
@@ -305,8 +314,8 @@ static int uvm_sl_ml_nb_peek(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   int stream_size = 0;
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int res = BP(nb_peek)(
     framework_id,
     id,
@@ -344,14 +353,14 @@ static int uvm_sl_ml_can_peek(lua_State * L) {
 static int uvm_sl_ml_request_transport(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int rsp_stream_size = 0;
-  unsigned rsp_stream[PACK_MAX_SIZE];
-  memset(rsp_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned rsp_stream[get_pack_max_size()];
+  memset(rsp_stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   int req_stream_size = luaL_getn(L, 4);
-  unsigned req_stream[PACK_MAX_SIZE];
-  memset(req_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned req_stream[get_pack_max_size()];
+  memset(req_stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
@@ -400,8 +409,8 @@ static int uvm_sl_ml_transport_response(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   // FIXME: have to use max size of stream, or will result into memory problem
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   //assert(stream);
   unsigned size = BP(transport_response)(
     framework_id,
@@ -425,8 +434,8 @@ static int uvm_sl_ml_nb_transport(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   int req_stream_size = luaL_getn(L, 2);
-  unsigned req_stream[PACK_MAX_SIZE];
-  memset(req_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned req_stream[get_pack_max_size()];
+  memset(req_stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   //uvm_ml_stream_t stream = (uvm_ml_stream_t)malloc(stream_size*sizeof(uvm_ml_stream_t));
   //assert(stream);
   int i = 1;
@@ -438,8 +447,8 @@ static int uvm_sl_ml_nb_transport(lua_State * L) {
   };
   lua_pop(L, 1);
   int rsp_stream_size = 0;
-  unsigned rsp_stream[PACK_MAX_SIZE];
-  memset(rsp_stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned rsp_stream[get_pack_max_size()];
+  memset(rsp_stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int res = BP(nb_transport)(
     framework_id,
     id,
@@ -472,8 +481,8 @@ static int uvm_sl_ml_write(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   int stream_size = luaL_getn(L, 2);
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
@@ -499,10 +508,10 @@ static int uvm_sl_ml_tlm2_request_b_transport(lua_State * L) {
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
   int stream_size = luaL_getn(L, 4);
-  unsigned* stream = (unsigned*)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned* stream = (unsigned*)malloc(sizeof(unsigned[get_pack_max_size()]));
   assert(stream);
   unsigned* old_ptr = stream;
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   double delay = luaL_checknumber(L, 5);
   int i = 1;
   lua_pushnil(L);
@@ -552,9 +561,9 @@ static int uvm_sl_ml_tlm2_b_transport_response(lua_State * L) {
   int id = luaL_checknumber(L, 1);
   unsigned call_id = luaL_checknumber(L, 2);
   unsigned callback_adapter_id = luaL_checknumber(L, 3);
-  int stream_size = PACK_MAX_SIZE;
-  unsigned stream[PACK_MAX_SIZE];
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  int stream_size = get_pack_max_size();
+  unsigned stream[get_pack_max_size()];
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   BP(b_transport_tlm2_response)(
     framework_id,
     id,
@@ -583,10 +592,10 @@ static int uvm_sl_ml_tlm2_nb_transport_fw(lua_State * L) {
   int stream_size = luaL_getn(L, 3);
   uvm_ml_tlm_phase phase = (uvm_ml_tlm_phase)luaL_checknumber(L, 4);
   double delay = luaL_checknumber(L, 5);
-  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[get_pack_max_size()]));
   assert(stream);
   unsigned *old_ptr = stream;
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
@@ -630,10 +639,10 @@ static int uvm_sl_ml_tlm2_nb_transport_bw(lua_State * L) {
   int stream_size = luaL_getn(L, 3);
   uvm_ml_tlm_phase phase = (uvm_ml_tlm_phase)luaL_checknumber(L, 4);
   double delay = luaL_checknumber(L, 5);
-  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[get_pack_max_size()]));
   assert(stream);
   unsigned *old_ptr = stream;
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
@@ -674,10 +683,10 @@ static int uvm_sl_ml_tlm2_transport_dbg(lua_State * L) {
   assert (bpProvidedAPI != NULL);
   int id = luaL_checknumber(L, 1);
   int stream_size = luaL_getn(L, 2);
-  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[PACK_MAX_SIZE]));
+  unsigned *stream = (unsigned *)malloc(sizeof(unsigned[get_pack_max_size()]));
   assert(stream);
   unsigned *old_ptr = stream;
-  memset(stream, '\0', sizeof(unsigned[PACK_MAX_SIZE]));
+  memset(stream, '\0', sizeof(unsigned[get_pack_max_size()]));
   int i = 1;
   lua_pushnil(L);
   for(; i <= stream_size; i++) {
@@ -755,6 +764,18 @@ static int uvm_sl_ml_set_match_types(lua_State * L) {
   const char * type1 = luaL_checkstring(L, 1);
   const char * type2 = luaL_checkstring(L, 2);
   int res = BP(set_match_types)(framework_id, type1, type2);
+  lua_pushnumber(L, res);
+  return 1;
+}
+
+static int uvm_sl_ml_set_pack_max_size(lua_State * L) {
+  int size = luaL_checknumber(L, 1);
+  set_pack_max_size(size);
+  return 0;
+}
+
+static int uvm_sl_ml_get_pack_max_size(lua_State * L) {
+  int res = get_pack_max_size();
   lua_pushnumber(L, res);
   return 1;
 }
@@ -856,6 +877,12 @@ static void startup() {
   lua_pushcfunction(L, uvm_sl_ml_set_match_types);
   lua_setglobal(L, "uvm_sl_ml_set_match_types");
 
+  lua_pushcfunction(L, uvm_sl_ml_set_pack_max_size);
+  lua_setglobal(L, "uvm_sl_ml_set_pack_max_size");
+
+  lua_pushcfunction(L, uvm_sl_ml_get_pack_max_size);
+  lua_setglobal(L, "uvm_sl_ml_get_pack_max_size");
+
 #ifdef SYS_LUA_CORE_FILE
   if(luaL_dofile(L, SYS_LUA_CORE_FILE) != 0)
 #else
@@ -865,6 +892,8 @@ static void startup() {
 
   lua_getglobal(L, "sl_traceback");
   lua_stack_base = lua_gettop(L);
+
+  //set_pack_max_size(PACK_MAX_SIZE);
 }
 
 static int construct_top(const char* filename, const char * instance_name){

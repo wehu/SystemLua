@@ -447,5 +447,15 @@ function ml_set_match_types(type1, type2)
   end
 end
 
+function ml_set_pack_max_size(size)
+  sl_checktype(size, "number")
+  uvm_sl_ml_set_pack_max_size(size)
+end
+
+function ml_get_pack_max_size()
+  return uvm_sl_ml_get_pack_max_size()
+end
+
 ml_set_match_types("SL:uvm_tlm_generic_payload", "SC:tlm_generic_payload")
 ml_set_match_types("SL:uvm_tlm_generic_payload", "SV:uvm_tlm_generic_payload")
+
