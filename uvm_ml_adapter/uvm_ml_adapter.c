@@ -1624,6 +1624,7 @@ __attribute__((constructor)) static void initialize_adapter() {
   assert(bpProvidedAPI != NULL);
   char *frmw_ids[3] = {(char*)"UVMSL", (char*)"SL",(char*)""};
   framework_id = BP(register_framework)((char*)"SystemLua",frmw_ids, uvm_ml_sl_get_required_api());
+//  set_pack_max_size(PACK_MAX_SIZE);
 }
 
 

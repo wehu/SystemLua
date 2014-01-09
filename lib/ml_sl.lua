@@ -38,7 +38,14 @@ local requests = {}
 --local call_phases = {}
 --local call_delays = {}
 
+local ml_setup = false
+
 local function create_connector(p)
+  if not ml_setup then
+    ml_setup = true
+    ml_set_match_types("SL:uvm_tlm_generic_payload", "SC:tlm_generic_payload")
+    ml_set_match_types("SL:uvm_tlm_generic_payload", "SV:uvm_tlm_generic_payload")
+  end
   local c = {}
   if p.type == "tlm_blocking_put" and not p.is_export then
     function c:put(data)
@@ -456,6 +463,4 @@ function ml_get_pack_max_size()
   return uvm_sl_ml_get_pack_max_size()
 end
 
-ml_set_match_types("SL:uvm_tlm_generic_payload", "SC:tlm_generic_payload")
-ml_set_match_types("SL:uvm_tlm_generic_payload", "SV:uvm_tlm_generic_payload")
 
