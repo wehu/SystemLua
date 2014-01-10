@@ -43,30 +43,12 @@ function ml_register_unpacker(typ, body)
   packers[typ].sl_unpack = body
 end
 
-function ml_set_packet_size(typ, size)
-  sl_checktype(typ, "string")
-  sl_checktype(size, "number")
-  if not packers[typ] then
-    packers[typ] = {}
-  end
-  packers[typ].sl_size = size + 2
-end
-
-function ml_set_packet_type(packet, data)
-  sl_checktype(packet, "table")
-  local typ = type(data)
-  if typ == "table" and data.type then
-    typ = data.type
-  end
-  local id = uvm_sl_ml_get_type_id(typ)
-  packet[2] = id
-end
-
 function ml_pack(data, packet, nonnull)
   local typ = type(data)
   if not packet then
     packet = {}
   end
+  sl_checktype(packet, "table")
   if typ == "table" and data.type then
     typ = data.type
   end
@@ -92,6 +74,7 @@ function ml_pack(data, packet, nonnull)
 end
 
 function ml_unpack(packet, nonnull)
+  sl_checktype(packet, "table")
   if packet[1] == 0 and not nonnull then
     return nil
   end
@@ -109,32 +92,6 @@ function ml_unpack(packet, nonnull)
   end
   return data
 end
-
-function ml_packet_size(typ)
-  sl_checktype(typ, "string")
-  local size = 0
-  if typ == "nil" then
-    return 1
-  end
-  if packers[typ] and packers[typ].sl_size then
-    size = packers[typ].sl_size
-  else
-    err("unsupported packed data type "..typ)
-  end
-  return size
-end
-
---[[
-function uvm_sl_ml_check_type_size(id, size)
-  local typ = uvm_sl_ml_get_type_name(id)
-  local packet_size = ml_packet_size(typ)
-  if packet_size ~= size then
-    err("the packet size of type "..typ.." expect "..packet_size.." but got "..size)
-  end
-end
---]]
-
-local b32 = 2^32
 
 ml_register_packer("number", function(packet, data)
   table.insert(packet, data)
