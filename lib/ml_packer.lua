@@ -63,7 +63,7 @@ function ml_pack(data, packet, nonnull)
       table.insert(packet, 1)
     end
     table.insert(packet, id)
-    packers[typ].sl_pack(packet, data)
+    packers[typ].sl_pack(data, packet)
     --id = uvm_sl_ml_get_type_id("unsigned")
     --table.insert(packet, id)
     --table.insert(packet, data)
@@ -93,15 +93,50 @@ function ml_unpack(packet, nonnull)
   return data
 end
 
-ml_register_packer("number", function(packet, data)
+local b32 = 2^32
+
+function ml_pack_int(data, packet, size)
+  sl_checktype(data, "number")
+  sl_checktype(packet, "table")
+  if not size then
+    size = 32
+  end
+  sl_checktype(size, "number")
+  local len = math.ceil(size/32)
+  for i = 1, len do
+    table.insert(packet, data%b32)
+    data = math.floor(data/b32)
+  end
+  return packet
+end
+
+function ml_unpack_int(packet, size)
+  sl_checktype(packet, "table")
+  if not size then
+    size = 32
+  end
+  local data = 0
+  local rest = 0
+  local len = math.ceil(size/32)
+  for i = 1, len do
+    rest = packet[1]
+    for j = 1, i-1 do
+      rest = rest * b32
+    end
+    data = data + rest
+    table.remove(packet, 1)
+  end
+  return data
+end
+
+ml_register_packer("number", function(data, packet)
   table.insert(packet, data)
   return packet
 end)
 
 ml_register_unpacker("number", function(packet)
   local data = 0
-  data = packet[1]
-  table.remove(packet, 1)
+  data = ml_unpack_int(packet)
   return data
 end)
 

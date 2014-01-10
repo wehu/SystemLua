@@ -298,56 +298,28 @@ function print_gp(gp)
   print("extension size: "..table.getn(gp.extensions))
 end
 
-local b8 = 2^8
-local b16 = 2^16
-local b24 = 2^24
-local b32 = 2^32
-
-local function pack_int(data, packet, size)
-  if size == 64 then
-    table.insert(packet, data%b32)
-    table.insert(packet, math.floor(data/b32))
-  else
-    table.insert(packet, data)
-  end
-  return packet
-end
-
-local function unpack_int(packet, size)
-  local data = 0
-  if size == 64 then
-    data = packet[1] + packet[2] * b32
-    table.remove(packet, 1)
-    table.remove(packet, 1)
-  else
-    data = packet[1]
-    table.remove(packet, 1)
-  end
-  return data
-end
-
-ml_register_packer("uvm_tlm_generic_payload", function(packet, gp)
+ml_register_packer("uvm_tlm_generic_payload", function(gp, packet)
   -- little endian
-  pack_int(gp.address, packet, 64)
-  pack_int(gp.command, packet)
+  ml_pack_int(gp.address, packet, 64)
+  ml_pack_int(gp.command, packet)
   local l = table.getn(gp.data)
-  pack_int(l, packet)
+  ml_pack_int(l, packet)
   for i, v in ipairs(gp.data) do
-    pack_int(v, packet)
+    ml_pack_int(v, packet)
   end
-  --pack_int(gp.length, packet)
-  pack_int(l, packet)
-  pack_int(gp.response_status, packet)
-  pack_int(0, packet)
+  --ml_pack_int(gp.length, packet)
+  ml_pack_int(l, packet)
+  ml_pack_int(gp.response_status, packet)
+  ml_pack_int(0, packet)
   l = table.getn(gp.byte_enable)
-  pack_int(l, packet)
+  ml_pack_int(l, packet)
   for i, v in ipairs(gp.byte_enable) do
-    pack_int(v, packet)
+    ml_pack_int(v, packet)
   end
-  --pack_int(gp.byte_enable_length, packet)
-  pack_int(l, packet)
-  pack_int(gp.streaming_width, packet)
-  pack_int(table.getn(gp.extensions), packet)
+  --ml_pack_int(gp.byte_enable_length, packet)
+  ml_pack_int(l, packet)
+  ml_pack_int(gp.streaming_width, packet)
+  ml_pack_int(table.getn(gp.extensions), packet)
   for i, v in ipairs(gp.extensions) do
     ml_pack(v, packet, true)
   end
@@ -356,26 +328,26 @@ end)
 
 ml_register_unpacker("uvm_tlm_generic_payload", function(packet)
   local gp = generic_payload()
-  gp.address = unpack_int(packet, 64)
-  gp.command = unpack_int(packet)
-  local l = unpack_int(packet)
+  gp.address = ml_unpack_int(packet, 64)
+  gp.command = ml_unpack_int(packet)
+  local l = ml_unpack_int(packet)
   for i = 1, l do
-    local d = unpack_int(packet)
+    local d = ml_unpack_int(packet)
     table.insert(gp.data, d)
   end
   --gp.length =
-  unpack_int(packet)
-  gp.response_status = unpack_int(packet)
-  unpack_int(packet)
-  l = unpack_int(packet)
+  ml_unpack_int(packet)
+  gp.response_status = ml_unpack_int(packet)
+  ml_unpack_int(packet)
+  l = ml_unpack_int(packet)
   for i = 1, l do
-    local d = unpack_int(packet)
+    local d = ml_unpack_int(packet)
     table.insert(gp.byte_enable, d)
   end
   --gp.byte_enable_length =
-  unpack_int(packet)
-  gp.streaming_width = unpack_int(packet)
-  el = unpack_int(packet)
+  ml_unpack_int(packet)
+  gp.streaming_width = ml_unpack_int(packet)
+  el = ml_unpack_int(packet)
   for i = 1,el do
     table.insert(gp.extensions, ml_unpack(packet, true))
   end
