@@ -77,6 +77,7 @@ function sl_scheduler:run()
       end
     end
   end
+  self.current = nil
 end
 
 function sl_scheduler:stop()

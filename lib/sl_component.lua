@@ -226,3 +226,32 @@ function find_component_by_full_name(name)
   return c
 end
 
+function run_test(tops, name)
+  local cs = {}
+  --run(function ()
+    for i, v in ipairs(tops) do
+      table.insert(cs, _G[v](v))
+    end
+    table.insert(cs, _G[name](name))
+  --end)
+  local static_phases = {"build", "connect", "resolve_bindings", "end_of_elaboration"}
+  local run_phases = {
+      "start_of_simulation",
+      "run",
+      "extract",
+      "check",
+      "report",
+      "final"}
+  for i, v in ipairs(static_phases) do
+    for j, c in ipairs(cs) do
+      c:notify_phase("common", v)
+    end
+  end
+  run(function ()
+    for i, v in ipairs(run_phases) do
+      for j, c in ipairs(cs) do
+        c:notify_runtime_phase("common", v)
+      end
+    end
+  end)
+end
